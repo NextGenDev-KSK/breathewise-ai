@@ -6,6 +6,9 @@ BreatheWise AI is a location-aware urban air-quality assistant for Indian househ
 
 Built for **Google PromptWars Virtual: Main Challenge 06, Urban Air Quality Assistant**.
 
+[![CI](https://github.com/NextGenDev-KSK/breathewise-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/NextGenDev-KSK/breathewise-ai/actions/workflows/ci.yml)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FNextGenDev-KSK%2Fbreathewise-ai&project-name=breathewise-ai&repository-name=breathewise-ai)
+
 ![Dashboard showing modelled US AQI 152 (Unhealthy) for Delhi, prioritised actions and a 24-hour PM2.5 forecast](docs/screenshots/dashboard.png)
 
 ---
@@ -212,7 +215,7 @@ External services are never called by the tests: Open-Meteo fixtures are real ca
 Requirements: **Node.js 22.12 or newer** (see `.nvmrc`) and npm.
 
 ```bash
-git clone <your-repo-url> breathewise
+git clone https://github.com/NextGenDev-KSK/breathewise-ai.git breathewise
 cd breathewise
 npm ci
 cp .env.example .env.local      # optional: add GEMINI_API_KEY for AI answers
@@ -241,7 +244,9 @@ Both are read only on the server. Never prefix them with `NEXT_PUBLIC_`.
 
 ## 16. Deployment
 
-**Vercel**
+**Vercel (one click):** use the **Deploy with Vercel** button at the top of this README, then optionally add `GEMINI_API_KEY` under **Project → Settings → Environment Variables** and redeploy.
+
+**Vercel (manual)**
 
 1. Push the repository to GitHub.
 2. In Vercel, choose **New Project**, import the repository, and keep the framework preset **Next.js**. No build settings need changing.
