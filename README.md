@@ -6,8 +6,9 @@ BreatheWise AI is a location-aware urban air-quality assistant for Indian househ
 
 Built for **Google PromptWars Virtual: Main Challenge 06, Urban Air Quality Assistant**.
 
+**Live demo: https://breathewise-ai-vercel.vercel.app/**
+
 [![CI](https://github.com/NextGenDev-KSK/breathewise-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/NextGenDev-KSK/breathewise-ai/actions/workflows/ci.yml)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FNextGenDev-KSK%2Fbreathewise-ai&project-name=breathewise-ai&repository-name=breathewise-ai)
 
 ![Dashboard showing modelled US AQI 152 (Unhealthy) for Delhi, prioritised actions and a 24-hour PM2.5 forecast](docs/screenshots/dashboard.png)
 
@@ -244,9 +245,7 @@ Both are read only on the server. Never prefix them with `NEXT_PUBLIC_`.
 
 ## 16. Deployment
 
-**Vercel (one click):** use the **Deploy with Vercel** button at the top of this README, then optionally add `GEMINI_API_KEY` under **Project → Settings → Environment Variables** and redeploy.
-
-**Vercel (manual)**
+The live demo runs on Vercel. To deploy your own copy:
 
 1. Push the repository to GitHub.
 2. In Vercel, choose **New Project**, import the repository, and keep the framework preset **Next.js**. No build settings need changing.
@@ -282,4 +281,4 @@ Any Node 22 host works the same way: `npm ci && npm run build && npm start`.
 
 BreatheWise provides general information, not medical advice.
 
-More documents: [Architecture](docs/ARCHITECTURE.md) · [Data methodology](docs/DATA-METHODOLOGY.md) · [Security](docs/SECURITY.md) · [Testing](docs/TESTING.md) · [Evaluation matrix](docs/EVALUATION-MATRIX.md) · [Demo script and submission checklist](docs/DEMO-SCRIPT.md)
+More documents: [Architecture](docs/ARCHITECTURE.md) · [Data methodology](docs/DATA-METHODOLOGY.md) · [Security](docs/SECURITY.md) · [Testing](docs/TESTING.md) · [Evaluation matrix](docs/EVALUATION-MATRIX.md)
