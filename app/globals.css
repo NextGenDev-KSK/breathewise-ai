@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-jakarta), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --color-navy-950: #0a1222;
+  --color-navy-900: #0f1b31;
+  --color-navy-800: #172742;
+  --color-navy-700: #223558;
+  --color-navy-300: #a9b8d3;
+  --color-navy-200: #cdd7e8;
+
+  --color-canvas: #f5f7fa;
+  --color-surface: #ffffff;
+  --color-line: #e2e8f0;
+  --color-line-strong: #cbd5e1;
+  --color-ink: #0f172a;
+  --color-ink-2: #334155;
+  --color-ink-3: #526077;
+
+  --color-brand-50: #ecfdf5;
+  --color-brand-100: #d1fae5;
+  --color-brand-500: #10b981;
+  --color-brand-600: #059669;
+  --color-brand-700: #047857;
+  --color-brand-800: #065f46;
+
+  --color-info-50: #eff6ff;
+  --color-info-700: #1d4ed8;
+  --color-info-800: #1e40af;
+  --color-caution-50: #fffbeb;
+  --color-caution-200: #fde68a;
+  --color-caution-800: #92400e;
+  --color-danger-50: #fef2f2;
+  --color-danger-700: #b91c1c;
+
+  /* Concern-level palette: background, text (≥ 4.5:1 on its background), and solid mark (≥ 3:1 on white). */
+  --color-lvl0-bg: #d1fae5;  --color-lvl0-fg: #065f46;  --color-lvl0: #059669;
+  --color-lvl1-bg: #fef9c3;  --color-lvl1-fg: #713f12;  --color-lvl1: #a16207;
+  --color-lvl2-bg: #ffedd5;  --color-lvl2-fg: #9a3412;  --color-lvl2: #ea580c;
+  --color-lvl3-bg: #fee2e2;  --color-lvl3-fg: #991b1b;  --color-lvl3: #dc2626;
+  --color-lvl4-bg: #f3e8ff;  --color-lvl4-fg: #6b21a8;  --color-lvl4: #9333ea;
+  --color-lvl5-bg: #ffe4e6;  --color-lvl5-fg: #881337;  --color-lvl5: #881337;
+  --color-lvlna-bg: #f1f5f9; --color-lvlna-fg: #334155; --color-lvlna: #64748b;
+
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 1px 3px rgb(15 23 42 / 0.06);
+  --shadow-raised: 0 4px 16px -4px rgb(15 23 42 / 0.12), 0 2px 4px rgb(15 23 42 / 0.05);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-padding-top: 5rem;
+  }
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-info-700);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  dialog::backdrop {
+    background: rgb(10 18 34 / 0.55);
+  }
+  ::selection {
+    background: var(--color-brand-100);
+  }
+}
+
+@layer utilities {
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-toast-in { animation: toast-in 180ms ease-out; }
