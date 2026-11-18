@@ -98,7 +98,7 @@ All screenshots use real Open-Meteo model data for Delhi captured on 17 Nov 2026
 | Styling | Tailwind CSS 4 with design tokens, `lucide-react` icons, self-hosted Inter and Plus Jakarta Sans via `next/font` |
 | Charts | A custom accessible SVG chart (no chart library: saves about 100 KB of JS) |
 | Validation | Zod 4 everywhere data crosses a boundary |
-| AI | `@google/genai` 3.4 (server-only), model `gemini-3.8-flash` by default |
+| AI | `@google/genai` 3.4 (server-only), model `gemini-3.5-flash-lite` by default (low latency, minimal thinking) |
 | Data | Open-Meteo Air Quality and Geocoding APIs (no key needed) |
 | Tests | Vitest 5, React Testing Library, Playwright 1.65, `@axe-core/playwright` |
 | Hosting | Vercel (no database, no auth, no paid services required) |
@@ -152,7 +152,7 @@ Air data is fetched directly by the browser, so a user's coordinates never pass 
 
 1. **Context:** `buildAssistantContext` sends only a place label, current readings, the next 24 hours of PM2.5 and US AQI, the deterministic outdoor window, the top rule recommendations and boolean preferences. It never sends coordinates.
 2. **Prompt:** a system instruction with 12 non-negotiable rules (no invented numbers, model ≠ station, never compute a CPCB AQI, never "safe", no diagnoses or percentages, CO₂e ≠ AQI, no ozone generators, user text is untrusted). The user text is delimited separately from the data.
-3. **Generation:** `responseMimeType: application/json` with a `responseJsonSchema`, low thinking level, 2,048 max output tokens, 20 s timeout via `AbortSignal`.
+3. **Generation:** `responseMimeType: application/json` with a `responseJsonSchema`, minimal thinking (Flash-Lite), 1,400 max output tokens, a 30 s budget via `AbortSignal`, and up to 3 attempts with 1–4 s backoff for quota or server errors (429/5xx). An exhausted quota is reported distinctly (`ai_rate_limited`).
 4. **Validation:** a Zod schema on the server, then `findUnsupportedClaims` rejects any concentration or AQI number not present in the data, any guarantee or "completely safe" wording, and any quantified benefit ("reduce exposure by 40%"). The client validates again before rendering.
 5. **Fallback:** `buildRuleBasedAnswer` detects intent (outdoor, children, indoor, commute, routine, education) and answers from the same engine in the same schema. The UI shows **Rule-based answer (no AI used)** with the reason.
 
@@ -179,7 +179,7 @@ Details: [docs/DATA-METHODOLOGY.md](docs/DATA-METHODOLOGY.md).
 ## 11. Security and privacy
 
 - Gemini key and model are **server-only** (`GEMINI_API_KEY`, `GEMINI_MODEL`; never `NEXT_PUBLIC_`). `server-only` makes a client import a build error.
-- `/api/assistant`: JSON-only (415), a 16 KB streaming body limit (413), Zod validation (400), a 600-character question limit, best-effort rate limiting at 10/min per IP (429 + `Retry-After`), a 20 s timeout (504), sanitised errors with no stack traces or upstream messages, and `Cache-Control: no-store`.
+- `/api/assistant`: JSON-only (415), a 16 KB streaming body limit (413), Zod validation (400), a 600-character question limit, best-effort rate limiting at 10/min per IP (429 + `Retry-After`), a 30 s AI budget (504), sanitised errors with no stack traces or upstream messages, and `Cache-Control: no-store`.
 - **Strict CSP** with a per-request nonce and `strict-dynamic`, no `unsafe-eval` in production, `frame-ancestors 'none'`, and `connect-src` limited to Open-Meteo. Also sets HSTS, `nosniff`, `Referrer-Policy`, `Permissions-Policy` (geolocation self only) and COOP.
 - No `dangerouslySetInnerHTML` (enforced by ESLint `react/no-danger`); all AI text renders as React text.
 - No account, analytics or tracking. localStorage holds only settings, preferences, chosen place, checklist and mission progress, all Zod-validated on read. A **Clear all local data** button removes them.
@@ -239,7 +239,7 @@ No key? The app runs fully in rule-based mode. To explore without choosing a cit
 | Variable | Required | Description |
 |---|---|---|
 | `GEMINI_API_KEY` | No | Google AI Studio key. Without it, the assistant uses the rule engine. |
-| `GEMINI_MODEL` | No | Defaults to `gemini-3.8-flash` (stable Flash model, verified 2026-11-17). Restricted to `[a-z0-9.-]`. |
+| `GEMINI_MODEL` | No | Defaults to `gemini-3.5-flash-lite`, Google's stable low-latency Flash-Lite model (verified 2026-11-18). `gemini-3.8-flash` also works but answered in 13–30 s in live tests. Restricted to `[a-z0-9.-]`. |
 
 Both are read only on the server. Never prefix them with `NEXT_PUBLIC_`.
 

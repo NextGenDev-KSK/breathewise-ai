@@ -4,8 +4,17 @@ import { ASSISTANT_RESPONSE_JSON_SCHEMA } from "@/lib/ai/schema";
 import { SYSTEM_INSTRUCTION, buildUserPrompt } from "@/lib/ai/prompt";
 import type { AssistantRequest } from "@/lib/ai/schema";
 
-/** Stable Flash model verified against the Gemini API model list on 2026-11-17. */
-export const DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
+/**
+ * Default: Google's low-latency stable Flash-Lite model (verified 2026-11-18). It supports
+ * structured output and "minimal" thinking. Live testing showed gemini-3.8-flash, whose lowest
+ * thinking level is "low", taking 13–30 s per answer. Set GEMINI_MODEL to use another model.
+ */
+export const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite";
+
+/** Flash-Lite models accept "minimal" thinking; other Gemini 3 Flash models reject it, so they use "low". */
+export function thinkingLevelFor(model: string): ThinkingLevel {
+  return model.includes("flash-lite") ? ThinkingLevel.MINIMAL : ThinkingLevel.LOW;
+}
 /** Overall budget for one answer, including SDK retries. The route allows 60 s. */
 export const GEMINI_TIMEOUT_MS = 30_000;
 
@@ -56,7 +65,7 @@ export async function generateAssistantJson(
         responseMimeType: "application/json",
         responseJsonSchema: ASSISTANT_RESPONSE_JSON_SCHEMA,
         maxOutputTokens: 1400,
-        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+        thinkingConfig: { thinkingLevel: thinkingLevelFor(config.model) },
         // Our own signal enforces the overall budget, so a timeout is always reported as one.
         abortSignal: controller.signal,
         httpOptions: { retryOptions: GEMINI_RETRY },

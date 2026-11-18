@@ -49,7 +49,7 @@ describe("POST /api/assistant", () => {
     expect(res.headers.get("cache-control")).toBe("no-store");
     const body = await res.json();
     expect(body.source).toBe("gemini");
-    expect(body.model).toBe("gemini-3.8-flash");
+    expect(body.model).toBe("gemini-3.5-flash-lite");
     expect(body.response.summary).toBe(GOOD_RESPONSE.summary);
   });
 

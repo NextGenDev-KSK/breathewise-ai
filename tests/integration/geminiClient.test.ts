@@ -11,7 +11,7 @@ vi.mock("@google/genai", () => ({
   GoogleGenAI: vi.fn(function GoogleGenAI() {
     return { models: { generateContent } };
   }),
-  ThinkingLevel: { LOW: "LOW" },
+  ThinkingLevel: { LOW: "LOW", MINIMAL: "MINIMAL" },
   ApiError,
 }));
 
@@ -34,8 +34,15 @@ describe("generateAssistantJson (Gemini SDK mocked)", () => {
     expect(call.config.maxOutputTokens).toBeLessThanOrEqual(4096);
     expect(call.config.httpOptions.retryOptions).toMatchObject({ attempts: 3, httpStatusCodes: expect.arrayContaining([429, 503]) });
     expect(call.config.abortSignal).toBeInstanceOf(AbortSignal);
+    expect(call.config.thinkingConfig.thinkingLevel).toBe("LOW"); // 3.8 Flash rejects "minimal"
     expect(call.contents).toContain("Can I walk now?");
     expect(call.contents).not.toMatch(/latitude|longitude|28\.65/);
+  });
+
+  it("uses minimal thinking for Flash-Lite models", async () => {
+    generateContent.mockResolvedValue({ text: JSON.stringify(GOOD_RESPONSE) });
+    await generateAssistantJson(req, { apiKey: "k", model: "gemini-3.5-flash-lite" });
+    expect(generateContent.mock.calls.at(-1)![0].config.thinkingConfig.thinkingLevel).toBe("MINIMAL");
   });
 
   it("maps quota and server errors by upstream status", async () => {
