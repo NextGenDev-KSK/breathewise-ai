@@ -214,15 +214,15 @@ Targets WCAG 2.2 AA:
 
 ## 13. Testing
 
-| Command                 | What runs                                                                    | Latest result                                                      |
-| ----------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `npm run format:check`  | Prettier                                                                     | pass                                                               |
-| `npm run lint`          | ESLint: Next core-web-vitals + type-aware TypeScript rules, zero warnings    | pass, 0 suppressions in source                                     |
-| `npm run lint:unused`   | Knip: unused files, exports and dependencies                                 | pass                                                               |
-| `npm run typecheck`     | `tsc --noEmit`, strict + `noUncheckedIndexedAccess`                          | pass                                                               |
-| `npm run test:coverage` | Vitest: 19 files, unit + integration + hook + component, enforced thresholds | **245 passed**; 92.7 % statements, 94.3 % lines                    |
-| `npm run test:e2e`      | Playwright on a production build, all APIs mocked, axe audits                | Chromium desktop + mobile and Firefox: 51 passed; 102/102 repeated |
-| `npm run build`         | Production build                                                             | pass                                                               |
+| Command                 | What runs                                                                    | Latest result                                                                      |
+| ----------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `npm run format:check`  | Prettier                                                                     | pass                                                                               |
+| `npm run lint`          | ESLint: Next core-web-vitals + type-aware TypeScript rules, zero warnings    | pass, 0 suppressions in source                                                     |
+| `npm run lint:unused`   | Knip: unused files, exports and dependencies                                 | pass                                                                               |
+| `npm run typecheck`     | `tsc --noEmit`, strict + `noUncheckedIndexedAccess`                          | pass                                                                               |
+| `npm run test:coverage` | Vitest: 19 files, unit + integration + hook + component, enforced thresholds | **245 passed**; 92.7 % statements, 94.3 % lines                                    |
+| `npm run test:e2e`      | Playwright on a production build, all APIs mocked, axe audits                | Local (Chromium + Firefox): 51 passed, 102/102 repeated; CI adds WebKit: 67 passed |
+| `npm run build`         | Production build                                                             | pass                                                                               |
 
 External services are never called by the tests: Open-Meteo fixtures are real captured responses, and Gemini is mocked at the SDK and HTTP levels. WebKit (Safari engine) runs in CI, inside the official Playwright Docker image. See [docs/TESTING.md](docs/TESTING.md).
 

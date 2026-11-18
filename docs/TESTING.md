@@ -17,18 +17,18 @@ npm run test:e2e      # builds, starts `next start` on :3200, runs Playwright
 
 ## Results (latest run)
 
-| Suite                                                  | Result                                                                                                         |
-| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| Prettier, ESLint (type-aware), Knip, TypeScript        | all clean; 0 lint suppressions in source                                                                       |
-| Vitest                                                 | **19 files, 245 tests passed**                                                                                 |
-| Coverage (all source)                                  | 92.7 % statements · 81.6 % branches · 89.9 % functions · 94.3 % lines (thresholds 90 / 78 / 85 / 90, enforced) |
-| Coverage (`lib/engine`, `lib/engine/plan`)             | 98.4 % / 96.4 % statements · 99.0 % / 97.5 % lines                                                             |
-| Playwright, Chromium desktop + mobile                  | **35 passed** (the mobile-only test is skipped on the desktop project)                                         |
-| Playwright, Firefox                                    | **16 passed** (all functional flows)                                                                           |
-| Playwright `--repeat-each=2`, all three local projects | **102 passed**, 0 flaky                                                                                        |
-| Playwright, WebKit                                     | runs in CI, inside the official Playwright Docker image (`mcr.microsoft.com/playwright:v1.65.1-noble`)         |
-| axe-core (WCAG 2.0/2.1/2.2 A and AA tags)              | 0 violations on all 8 pages at desktop and Pixel 7 sizes, plus the onboarding dialog                           |
-| `next build`                                           | success; every route dynamic (required for the CSP nonce)                                                      |
+| Suite                                                  | Result                                                                                                                                                                  |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Prettier, ESLint (type-aware), Knip, TypeScript        | all clean; 0 lint suppressions in source                                                                                                                                |
+| Vitest                                                 | **19 files, 245 tests passed**                                                                                                                                          |
+| Coverage (all source)                                  | 92.7 % statements · 81.6 % branches · 89.9 % functions · 94.3 % lines (thresholds 90 / 78 / 85 / 90, enforced)                                                          |
+| Coverage (`lib/engine`, `lib/engine/plan`)             | 98.4 % / 96.4 % statements · 99.0 % / 97.5 % lines                                                                                                                      |
+| Playwright, Chromium desktop + mobile                  | **35 passed** (the mobile-only test is skipped on the desktop project)                                                                                                  |
+| Playwright, Firefox                                    | **16 passed** (all functional flows)                                                                                                                                    |
+| Playwright `--repeat-each=2`, all three local projects | **102 passed**, 0 flaky                                                                                                                                                 |
+| Playwright, WebKit                                     | **16 passed** in CI, inside the official Playwright Docker image (`mcr.microsoft.com/playwright:v1.65.1-noble`); the full CI run is 67 passed across all three browsers |
+| axe-core (WCAG 2.0/2.1/2.2 A and AA tags)              | 0 violations on all 8 pages at desktop and Pixel 7 sizes, plus the onboarding dialog                                                                                    |
+| `next build`                                           | success; every route dynamic (required for the CSP nonce)                                                                                                               |
 
 ## What is tested
 
