@@ -3,74 +3,25 @@
 import { useId, useState } from "react";
 import { PreferencesSchema, type Preferences } from "@/types/preferences";
 import { Button } from "@/components/ui/Button";
-import { InputField, SelectField, type SelectOption } from "@/components/ui/FormField";
+import { EquipmentFields, HouseholdFields, RoutineFields } from "@/components/plan/preferences/fields";
 
-const ROUTINE_OPTIONS: readonly SelectOption<Preferences["routine"]>[] = [
-  { value: "office", label: "Office / work outside home" },
-  { value: "student", label: "Student" },
-  { value: "home", label: "Mostly at home" },
-  { value: "shift", label: "Shift work" },
-];
-
-const COMMUTE_OPTIONS: readonly SelectOption<Preferences["commuteMode"]>[] = [
-  { value: "car", label: "Car" },
-  { value: "two_wheeler", label: "Two-wheeler" },
-  { value: "bus", label: "Bus" },
-  { value: "metro", label: "Metro" },
-  { value: "walk", label: "Walking" },
-  { value: "cycle", label: "Cycling" },
-  { value: "none", label: "No regular commute" },
-];
-
-const ACTIVITY_OPTIONS: readonly SelectOption<Preferences["outdoorActivity"]>[] = [
-  { value: "walking", label: "Walking" },
-  { value: "jogging", label: "Jogging / running" },
-  { value: "cycling", label: "Cycling" },
-  { value: "exercise", label: "Outdoor exercise" },
-  { value: "children_play", label: "Children's outdoor play" },
-  { value: "none", label: "None" },
-];
-
-const ACTIVITY_TIME_OPTIONS: readonly SelectOption<Preferences["preferredActivityTime"]>[] = [
-  { value: "flexible", label: "Flexible" },
-  { value: "morning", label: "Morning" },
-  { value: "evening", label: "Evening" },
-];
-
-const FUEL_OPTIONS: readonly SelectOption<Preferences["cookingFuel"]>[] = [
-  { value: "gas", label: "LPG / piped gas" },
-  { value: "electric", label: "Electric / induction" },
-  { value: "biomass", label: "Wood, coal or other solid fuel" },
-  { value: "unknown", label: "Prefer not to say" },
-];
-
-function Checkbox({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}) {
-  const id = useId();
+function FormErrors({ id, errors }: { id: string; errors: readonly string[] }) {
+  if (!errors.length) return null;
   return (
-    <div className="flex min-h-11 items-start gap-3 py-1">
-      <input
-        id={id}
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="accent-brand-700 mt-0.5 size-5 shrink-0"
-      />
-      <label htmlFor={id} className="text-ink text-sm">
-        {label}
-      </label>
+    <div
+      id={id}
+      role="alert"
+      className="bg-danger-50 text-danger-700 rounded-lg border border-red-200 p-3 text-sm"
+    >
+      <p className="font-semibold">Please fix the following:</p>
+      <ul className="mt-1 list-disc pl-5">
+        {errors.map((error) => (
+          <li key={error}>{error}</li>
+        ))}
+      </ul>
     </div>
   );
 }
-
-const LEGEND = "mb-2 text-sm font-semibold tracking-wide text-ink-3 uppercase";
 
 /**
  * Optional household and routine preferences. Asks about circumstances, never medical diagnoses.
@@ -86,12 +37,8 @@ export function PreferencesForm({
   const [draft, setDraft] = useState<Preferences>(initial);
   const [errors, setErrors] = useState<string[]>([]);
   const id = useId();
-  const set = <K extends keyof Preferences>(key: K, value: Preferences[K]) =>
-    setDraft((current) => ({ ...current, [key]: value }));
-  const setHousehold = (patch: Partial<Preferences["household"]>) =>
-    set("household", { ...draft.household, ...patch });
-  const setEquipment = (patch: Partial<Preferences["equipment"]>) =>
-    set("equipment", { ...draft.equipment, ...patch });
+  const errorsId = `${id}-errors`;
+  const update = (patch: Partial<Preferences>) => setDraft((current) => ({ ...current, ...patch }));
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,125 +51,18 @@ export function PreferencesForm({
     onSubmit(parsed.data);
   };
 
+  const fields = { id, draft, update };
   return (
     <form
       onSubmit={submit}
       noValidate
-      aria-describedby={errors.length ? `${id}-errors` : undefined}
+      aria-describedby={errors.length ? errorsId : undefined}
       className="space-y-6"
     >
-      {errors.length ? (
-        <div
-          id={`${id}-errors`}
-          role="alert"
-          className="bg-danger-50 text-danger-700 rounded-lg border border-red-200 p-3 text-sm"
-        >
-          <p className="font-semibold">Please fix the following:</p>
-          <ul className="mt-1 list-disc pl-5">
-            {errors.map((error) => (
-              <li key={error}>{error}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className={LEGEND}>Routine</legend>
-        <SelectField
-          id={`${id}-routine`}
-          label="Daily routine"
-          value={draft.routine}
-          options={ROUTINE_OPTIONS}
-          onChange={(v) => set("routine", v)}
-        />
-        <SelectField
-          id={`${id}-commute`}
-          label="Usual commute"
-          value={draft.commuteMode}
-          options={COMMUTE_OPTIONS}
-          onChange={(v) => set("commuteMode", v)}
-        />
-        <InputField
-          id={`${id}-leave`}
-          label="Leave home at"
-          type="time"
-          required
-          value={draft.leaveTime}
-          onValueChange={(v) => set("leaveTime", v)}
-        />
-        <InputField
-          id={`${id}-return`}
-          label="Return home at"
-          type="time"
-          required
-          value={draft.returnTime}
-          onValueChange={(v) => set("returnTime", v)}
-        />
-        <SelectField
-          id={`${id}-activity`}
-          label="Outdoor activity habit"
-          value={draft.outdoorActivity}
-          options={ACTIVITY_OPTIONS}
-          onChange={(v) => set("outdoorActivity", v)}
-        />
-        <SelectField
-          id={`${id}-when`}
-          label="Preferred activity time"
-          value={draft.preferredActivityTime}
-          options={ACTIVITY_TIME_OPTIONS}
-          onChange={(v) => set("preferredActivityTime", v)}
-        />
-      </fieldset>
-
-      <fieldset>
-        <legend className="text-ink-3 mb-1 text-sm font-semibold tracking-wide uppercase">
-          Household (optional)
-        </legend>
-        <p className="text-ink-3 mb-2 text-xs">
-          Used only to add extra caution. No health details are asked or stored.
-        </p>
-        <div className="grid sm:grid-cols-3">
-          <Checkbox
-            label="Children"
-            checked={draft.household.children}
-            onChange={(children) => setHousehold({ children })}
-          />
-          <Checkbox
-            label="Older adults"
-            checked={draft.household.olderAdults}
-            onChange={(olderAdults) => setHousehold({ olderAdults })}
-          />
-          <Checkbox
-            label="Someone sensitive to air pollution"
-            checked={draft.household.respiratorySensitivity}
-            onChange={(respiratorySensitivity) => setHousehold({ respiratorySensitivity })}
-          />
-        </div>
-      </fieldset>
-
-      <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className={LEGEND}>Home equipment</legend>
-        <div>
-          <Checkbox
-            label="Air purifier with HEPA filter"
-            checked={draft.equipment.airPurifier}
-            onChange={(airPurifier) => setEquipment({ airPurifier })}
-          />
-          <Checkbox
-            label="Kitchen exhaust vented outdoors"
-            checked={draft.equipment.kitchenExhaust}
-            onChange={(kitchenExhaust) => setEquipment({ kitchenExhaust })}
-          />
-        </div>
-        <SelectField
-          id={`${id}-fuel`}
-          label="Main cooking fuel"
-          value={draft.cookingFuel}
-          options={FUEL_OPTIONS}
-          onChange={(v) => set("cookingFuel", v)}
-        />
-      </fieldset>
-
+      <FormErrors id={errorsId} errors={errors} />
+      <RoutineFields {...fields} />
+      <HouseholdFields {...fields} />
+      <EquipmentFields {...fields} />
       <Button type="submit">Generate my clean-air day</Button>
     </form>
   );

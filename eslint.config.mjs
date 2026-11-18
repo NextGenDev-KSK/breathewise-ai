@@ -35,6 +35,17 @@ const config = [
     },
   },
   {
+    // Size and complexity budgets for shipped code: keeps every function readable and testable.
+    files: ["app/**", "components/**", "hooks/**", "lib/**", "types/**", "proxy.ts"],
+    rules: {
+      complexity: ["error", 12],
+      "max-depth": ["error", 3],
+      "max-params": ["error", 4],
+      "max-lines-per-function": ["error", { max: 80, skipBlankLines: true, skipComments: true }],
+      "max-lines": ["error", { max: 300, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  {
     // Tests assert on values known to exist; non-null assertions keep them readable.
     files: ["tests/**"],
     rules: { "@typescript-eslint/no-non-null-assertion": "off" },

@@ -82,58 +82,55 @@ describe("askGemini (browser client)", () => {
     vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status }));
 
   it("returns validated responses", async () => {
-    const r = await askGemini(
-      "q",
-      [],
-      delhiContext(),
-      undefined,
-      ok({ source: "gemini", model: "m", response: GOOD_RESPONSE }),
-    );
+    const r = await askGemini({
+      message: "q",
+      history: [],
+      context: delhiContext(),
+      fetchImpl: ok({ source: "gemini", model: "m", response: GOOD_RESPONSE }),
+    });
     expect(r).toMatchObject({ ok: true, model: "m" });
   });
   it("rejects responses that fail client-side validation", async () => {
-    const r = await askGemini(
-      "q",
-      [],
-      delhiContext(),
-      undefined,
-      ok({ source: "gemini", model: "m", response: { summary: "x" } }),
-    );
+    const r = await askGemini({
+      message: "q",
+      history: [],
+      context: delhiContext(),
+      fetchImpl: ok({ source: "gemini", model: "m", response: { summary: "x" } }),
+    });
     expect(r).toMatchObject({ ok: false, code: "ai_invalid_output" });
   });
   it("passes through typed server errors and handles unknown ones", async () => {
     expect(
-      await askGemini(
-        "q",
-        [],
-        delhiContext(),
-        undefined,
-        ok({ error: "ai_not_configured", message: "m" }, 503),
-      ),
+      await askGemini({
+        message: "q",
+        history: [],
+        context: delhiContext(),
+        fetchImpl: ok({ error: "ai_not_configured", message: "m" }, 503),
+      }),
     ).toMatchObject({ ok: false, code: "ai_not_configured" });
-    expect(await askGemini("q", [], delhiContext(), undefined, ok("<html>", 500))).toMatchObject({
+    expect(
+      await askGemini({ message: "q", history: [], context: delhiContext(), fetchImpl: ok("<html>", 500) }),
+    ).toMatchObject({
       ok: false,
       code: "unknown",
     });
   });
   it("reports network failures and rethrows aborts", async () => {
     expect(
-      await askGemini(
-        "q",
-        [],
-        delhiContext(),
-        undefined,
-        vi.fn().mockRejectedValue(new TypeError("offline")),
-      ),
+      await askGemini({
+        message: "q",
+        history: [],
+        context: delhiContext(),
+        fetchImpl: vi.fn().mockRejectedValue(new TypeError("offline")),
+      }),
     ).toMatchObject({ ok: false, code: "network" });
     await expect(
-      askGemini(
-        "q",
-        [],
-        delhiContext(),
-        undefined,
-        vi.fn().mockRejectedValue(new DOMException("x", "AbortError")),
-      ),
+      askGemini({
+        message: "q",
+        history: [],
+        context: delhiContext(),
+        fetchImpl: vi.fn().mockRejectedValue(new DOMException("x", "AbortError")),
+      }),
     ).rejects.toThrow();
   });
 });

@@ -137,7 +137,7 @@ proxy.ts                    Per-request nonce + strict Content-Security-Policy
 tests/                      unit/, integration/, e2e/, fixtures/ (real captured API responses)
 ```
 
-The recommendation logic lives in `lib/engine` as pure functions. Neither React components nor the Gemini prompt contain decision rules. Quality gates enforced in CI: Prettier, ESLint with type-aware rules (zero warnings, zero suppressions), Knip (no unused files, exports or dependencies), strict TypeScript, coverage thresholds, and CodeQL. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/CODE-QUALITY-AUDIT.md](docs/CODE-QUALITY-AUDIT.md).
+The recommendation logic lives in `lib/engine` as pure functions. Neither React components nor the Gemini prompt contain decision rules. Quality gates enforced in CI: Prettier, ESLint with type-aware rules and complexity/size budgets (complexity ≤ 12, ≤ 80 lines per function, ≤ 300 lines per file; zero warnings, zero suppressions), jscpd (0 duplicated blocks), Knip (no unused files, exports or dependencies), strict TypeScript, coverage thresholds, and CodeQL. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/CODE-QUALITY-AUDIT.md](docs/CODE-QUALITY-AUDIT.md).
 
 ## 7. Data flow
 
@@ -214,15 +214,16 @@ Targets WCAG 2.2 AA:
 
 ## 13. Testing
 
-| Command                 | What runs                                                                    | Latest result                                                                      |
-| ----------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `npm run format:check`  | Prettier                                                                     | pass                                                                               |
-| `npm run lint`          | ESLint: Next core-web-vitals + type-aware TypeScript rules, zero warnings    | pass, 0 suppressions in source                                                     |
-| `npm run lint:unused`   | Knip: unused files, exports and dependencies                                 | pass                                                                               |
-| `npm run typecheck`     | `tsc --noEmit`, strict + `noUncheckedIndexedAccess`                          | pass                                                                               |
-| `npm run test:coverage` | Vitest: 19 files, unit + integration + hook + component, enforced thresholds | **245 passed**; 92.7 % statements, 94.3 % lines                                    |
-| `npm run test:e2e`      | Playwright on a production build, all APIs mocked, axe audits                | Local (Chromium + Firefox): 51 passed, 102/102 repeated; CI adds WebKit: 67 passed |
-| `npm run build`         | Production build                                                             | pass                                                                               |
+| Command                   | What runs                                                                        | Latest result                                                                      |
+| ------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `npm run format:check`    | Prettier                                                                         | pass                                                                               |
+| `npm run lint`            | ESLint: Next core-web-vitals + type-aware rules + complexity budgets, 0 warnings | pass, 0 suppressions in source                                                     |
+| `npm run lint:unused`     | Knip: unused files, exports and dependencies                                     | pass                                                                               |
+| `npm run lint:duplicates` | jscpd: copy-pasted blocks in shipped code (threshold 0)                          | 0 clones                                                                           |
+| `npm run typecheck`       | `tsc --noEmit`, strict + `noUncheckedIndexedAccess`                              | pass                                                                               |
+| `npm run test:coverage`   | Vitest: 19 files, unit + integration + hook + component, enforced thresholds     | **246 passed**; 92.9 % statements, 94.7 % lines                                    |
+| `npm run test:e2e`        | Playwright on a production build, all APIs mocked, axe audits                    | Local (Chromium + Firefox): 51 passed, 102/102 repeated; CI adds WebKit: 67 passed |
+| `npm run build`           | Production build                                                                 | pass                                                                               |
 
 External services are never called by the tests: Open-Meteo fixtures are real captured responses, and Gemini is mocked at the SDK and HTTP levels. WebKit (Safari engine) runs in CI, inside the official Playwright Docker image. See [docs/TESTING.md](docs/TESTING.md).
 

@@ -13,14 +13,23 @@ export type AskResult =
   | { ok: true; response: AssistantResponse; model: string }
   | { ok: false; reason: string; code: AskFailureCode };
 
+export interface AskOptions {
+  message: string;
+  history: { role: "user" | "assistant"; text: string }[];
+  context: AssistantContext;
+  signal?: AbortSignal;
+  /** Injected in tests; defaults to the global fetch. */
+  fetchImpl?: typeof fetch;
+}
+
 /** Calls the server endpoint and re-validates the response before it can be rendered. */
-export async function askGemini(
-  message: string,
-  history: { role: "user" | "assistant"; text: string }[],
-  context: AssistantContext,
-  signal?: AbortSignal,
-  fetchImpl: typeof fetch = fetch,
-): Promise<AskResult> {
+export async function askGemini({
+  message,
+  history,
+  context,
+  signal,
+  fetchImpl = fetch,
+}: AskOptions): Promise<AskResult> {
   let res: Response;
   try {
     res = await fetchImpl("/api/assistant", {

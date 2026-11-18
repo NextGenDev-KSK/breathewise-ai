@@ -88,105 +88,97 @@ const VERDICT_TEXT: Record<Verdict, string> = {
   unknown: "Not enough forecast data",
 };
 
-/**
- * Finds the comparatively cleanest contiguous window for an activity in the forecast.
- * "Better" is relative to the other forecast hours; it never means "safe".
- */
-export function findOutdoorWindow(snapshot: AirQualitySnapshot, opts: WindowOptions): OutdoorWindowResult {
-  const profile = ACTIVITY_PROFILES[opts.activity];
-  const fmt = opts.formatTime ?? formatTime24;
-  const sensitive = hasSensitiveMember(opts.household) || profile.involvesChildren;
+/** Forecast hours where the activity could start: from now, within realistic local hours. */
+function candidateHours(
+  snapshot: AirQualitySnapshot,
+  opts: WindowOptions,
+  profile: ActivityProfile,
+): HourlyPoint[] {
   const range = opts.hourRange ?? { start: profile.earliestHour, end: profile.latestHour };
-  const start = Math.max(range.start, profile.earliestHour);
-  const end = Math.min(range.end, profile.latestHour);
-
-  const hours = upcomingHours(snapshot, opts.nowMs, opts.horizonHours ?? 24)
+  const first = Math.max(range.start, profile.earliestHour);
+  const last = Math.min(range.end, profile.latestHour);
+  return upcomingHours(snapshot, opts.nowMs, opts.horizonHours ?? 24)
     .filter((h) => h.epochMs >= opts.nowMs - 30 * MINUTE_MS) // windows must start no earlier than ~now
     .filter((h) => {
-      const hr = localHour(h.time);
-      return hr >= start && hr + profile.durationHours <= end;
+      const hour = localHour(h.time);
+      return hour >= first && hour + profile.durationHours <= last;
     });
+}
 
-  const metric = chooseMetric(hours);
-  const nowLocal = epochToLocalTime(opts.nowMs, snapshot.utcOffsetSeconds);
-  const base = {
-    activity: opts.activity,
-    profile,
-    metric,
-    metricLabel: metric ? METRIC_LABELS[metric] : null,
-  };
+/** Inputs shared by every step of one window search. */
+interface SearchContext {
+  snapshot: AirQualitySnapshot;
+  metric: Metric;
+  profile: ActivityProfile;
+  nowMs: number;
+  fmt: FormatTime;
+}
 
-  if (!metric || hours.length === 0) {
-    return {
-      ...base,
-      status: "insufficient-data",
-      best: null,
-      worst: null,
-      verdict: "unknown",
-      headline: VERDICT_TEXT.unknown,
-      reasons: ["The forecast does not cover suitable hours for this activity in the selected period."],
-      cautions: [],
-      uncertain: true,
-      uncertaintyNotes: ["No usable forecast values were found for the requested hours."],
-      consideredHours: 0,
-    };
-  }
+/** The comparatively cleanest and dirtiest slots found. */
+interface Extremes {
+  best: WindowSlot;
+  worst: WindowSlot;
+}
 
+interface SlotScan {
+  slots: WindowSlot[];
+  /** Candidate start hours skipped because part of the window had no data. */
+  skipped: number;
+}
+
+/** Scores every candidate start; a slot counts only when every hour in it has data. */
+function scanSlots({ snapshot, metric, profile, nowMs }: SearchContext, hours: HourlyPoint[]): SlotScan {
+  const nowLocal = epochToLocalTime(nowMs, snapshot.utcOffsetSeconds);
+  const durationMs = profile.durationHours * HOUR_MS;
   const slots: WindowSlot[] = [];
   let skipped = 0;
-  for (const h of hours) {
-    const windowHours: HourlyPoint[] = snapshot.hourly.filter(
-      (x) => x.epochMs >= h.epochMs && x.epochMs < h.epochMs + profile.durationHours * HOUR_MS,
+  for (const start of hours) {
+    const values = metricValues(
+      snapshot.hourly.filter((h) => h.epochMs >= start.epochMs && h.epochMs < start.epochMs + durationMs),
+      metric,
     );
-    const values = metricValues(windowHours, metric);
     const average = mean(values);
-    // A slot counts only when every hour in it has data; gaps are never treated as clean air.
+    // Gaps are never treated as clean air.
     if (average === null || values.length < profile.durationHours) {
       skipped++;
       continue;
     }
     const level: ConcernLevel = concernLevelFor(metric, average) ?? 0;
     slots.push({
-      startTime: h.time,
-      dayLabel: relativeDayLabel(h.time, nowLocal),
-      endTime: epochToLocalTime(h.epochMs + profile.durationHours * HOUR_MS, snapshot.utcOffsetSeconds),
-      startMs: h.epochMs,
+      startTime: start.time,
+      dayLabel: relativeDayLabel(start.time, nowLocal),
+      endTime: epochToLocalTime(start.epochMs + durationMs, snapshot.utcOffsetSeconds),
+      startMs: start.epochMs,
       meanValue: average,
       level,
       levelLabel: CONCERN_LABELS[level],
     });
   }
+  return { slots, skipped };
+}
 
-  // Lowest mean wins; ties go to the earliest start.
-  const best = minBy(slots, (slot) => slot.meanValue);
-  const worst = maxBy(slots, (slot) => slot.meanValue);
-  if (!best || !worst) {
-    return {
-      ...base,
-      status: "insufficient-data",
-      best: null,
-      worst: null,
-      verdict: "unknown",
-      headline: VERDICT_TEXT.unknown,
-      reasons: ["Forecast values are missing for the candidate hours."],
-      cautions: [],
-      uncertain: true,
-      uncertaintyNotes: ["Missing forecast values were not treated as zero."],
-      consideredHours: hours.length,
-    };
-  }
-
-  const verdict = decideVerdict(best.level, profile.intensity, sensitive);
-
+function windowReasons(
+  { metric, fmt }: SearchContext,
+  { best, worst }: Extremes,
+  slotCount: number,
+): string[] {
   const reasons = [
-    `Of ${slots.length} candidate start times in the forecast, ${fmt(best.startTime)} has the lowest forecast value (${describeMetricValue(metric, best.meanValue)}, ${best.levelLabel.toLowerCase()} concern).`,
+    `Of ${slotCount} candidate start times in the forecast, ${fmt(best.startTime)} has the lowest forecast value (${describeMetricValue(metric, best.meanValue)}, ${best.levelLabel.toLowerCase()} concern).`,
   ];
   if (worst.meanValue > best.meanValue) {
     reasons.push(
       `The highest forecast value in the same period is ${describeMetricValue(metric, worst.meanValue)} around ${fmt(worst.startTime)}.`,
     );
   }
+  return reasons;
+}
 
+function windowCautions(
+  verdict: Verdict,
+  profile: ActivityProfile,
+  sensitive: boolean,
+  bestLevel: ConcernLevel,
+): string[] {
   const cautions: string[] = [];
   if (verdict === "avoid") {
     cautions.push(
@@ -197,37 +189,108 @@ export function findOutdoorWindow(snapshot: AirQualitySnapshot, opts: WindowOpti
   } else if (verdict === "reduce") {
     cautions.push("Prefer a shorter, lower-intensity session and stop if anyone feels discomfort.");
   }
-  if (sensitive && best.level >= 1) {
+  if (sensitive && bestLevel >= 1) {
     cautions.push(
       "Children, older adults and people with respiratory sensitivity are generally more affected by polluted air.",
     );
   }
+  return cautions;
+}
 
-  const uncertaintyNotes: string[] = [MODEL_LIMITATION];
-  if (snapshot.model.id === "cams_global") uncertaintyNotes.push(GLOBAL_MODEL_NOTE);
-  const uncertain = skipped > hours.length * MAX_MISSING_SHARE || slots.length < MIN_SLOTS;
-  if (uncertain)
-    uncertaintyNotes.push("Several forecast hours are missing, so this recommendation is less certain.");
+function windowUncertainty(
+  snapshot: AirQualitySnapshot,
+  scan: SlotScan,
+  candidates: number,
+  { best, worst }: Extremes,
+) {
+  const notes: string[] = [MODEL_LIMITATION];
+  if (snapshot.model.id === "cams_global") notes.push(GLOBAL_MODEL_NOTE);
+  const uncertain = scan.skipped > candidates * MAX_MISSING_SHARE || scan.slots.length < MIN_SLOTS;
+  if (uncertain) notes.push("Several forecast hours are missing, so this recommendation is less certain.");
   if (worst.meanValue - best.meanValue < best.meanValue * SIMILAR_VALUES_SHARE) {
-    uncertaintyNotes.push(
-      "Forecast values are similar across the period, so timing makes little difference.",
+    notes.push("Forecast values are similar across the period, so timing makes little difference.");
+  }
+  return { uncertain, notes };
+}
+
+type ResultBase = Pick<OutdoorWindowResult, "activity" | "profile" | "metric" | "metricLabel">;
+
+function insufficientData(
+  base: ResultBase,
+  reason: string,
+  note: string,
+  consideredHours: number,
+): OutdoorWindowResult {
+  return {
+    ...base,
+    status: "insufficient-data",
+    best: null,
+    worst: null,
+    verdict: "unknown",
+    headline: VERDICT_TEXT.unknown,
+    reasons: [reason],
+    cautions: [],
+    uncertain: true,
+    uncertaintyNotes: [note],
+    consideredHours,
+  };
+}
+
+/**
+ * Finds the comparatively cleanest contiguous window for an activity in the forecast.
+ * "Better" is relative to the other forecast hours; it never means "safe".
+ */
+export function findOutdoorWindow(snapshot: AirQualitySnapshot, opts: WindowOptions): OutdoorWindowResult {
+  const profile = ACTIVITY_PROFILES[opts.activity];
+  const fmt = opts.formatTime ?? formatTime24;
+  const hours = candidateHours(snapshot, opts, profile);
+  const metric = chooseMetric(hours);
+  const base: ResultBase = {
+    activity: opts.activity,
+    profile,
+    metric,
+    metricLabel: metric ? METRIC_LABELS[metric] : null,
+  };
+
+  if (!metric || hours.length === 0) {
+    return insufficientData(
+      base,
+      "The forecast does not cover suitable hours for this activity in the selected period.",
+      "No usable forecast values were found for the requested hours.",
+      0,
     );
   }
 
-  const headline =
-    verdict === "avoid" ? VERDICT_TEXT.avoid : `${VERDICT_TEXT[verdict]}: ${windowRange(best, fmt)}`;
+  const ctx: SearchContext = { snapshot, metric, profile, nowMs: opts.nowMs, fmt };
+  const scan = scanSlots(ctx, hours);
+  // Lowest mean wins; ties go to the earliest start.
+  const best = minBy(scan.slots, (slot) => slot.meanValue);
+  const worst = maxBy(scan.slots, (slot) => slot.meanValue);
+  if (!best || !worst) {
+    return insufficientData(
+      base,
+      "Forecast values are missing for the candidate hours.",
+      "Missing forecast values were not treated as zero.",
+      hours.length,
+    );
+  }
 
+  const sensitive = hasSensitiveMember(opts.household) || profile.involvesChildren;
+  const verdict = decideVerdict(best.level, profile.intensity, sensitive);
+  const extremes: Extremes = { best, worst };
+  const { uncertain, notes } = windowUncertainty(snapshot, scan, hours.length, extremes);
   return {
     ...base,
     status: "ok",
     best,
     worst,
     verdict,
-    headline,
-    reasons,
-    cautions,
+    headline:
+      verdict === "avoid" ? VERDICT_TEXT.avoid : `${VERDICT_TEXT[verdict]}: ${windowRange(best, fmt)}`,
+    reasons: windowReasons(ctx, extremes, scan.slots.length),
+    cautions: windowCautions(verdict, profile, sensitive, best.level),
     uncertain,
-    uncertaintyNotes,
-    consideredHours: slots.length,
+    uncertaintyNotes: notes,
+    consideredHours: scan.slots.length,
   };
 }

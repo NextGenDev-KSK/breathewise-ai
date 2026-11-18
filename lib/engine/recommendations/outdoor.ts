@@ -1,6 +1,6 @@
 import { hasSensitiveMember } from "@/types/preferences";
 import { MODEL_LIMITATION } from "@/lib/content/notices";
-import { describeMetricValue, summarizeTrend } from "@/lib/engine/analysis";
+import { describeMetricValue, summarizeTrend, type Metric, type TrendSummary } from "@/lib/engine/analysis";
 import { findOutdoorWindow, windowRange } from "@/lib/engine/windows";
 import type { Rule } from "@/lib/engine/recommendations/types";
 
@@ -76,29 +76,55 @@ export const sensitiveHousehold: Rule = ({ preferences, concern, source, confide
   };
 };
 
+/** A trend worth acting on: clearly improving or worsening, with both averages available. */
+interface ActionableTrend {
+  direction: "improving" | "worsening";
+  metric: Metric;
+  nowValue: number;
+  laterValue: number;
+  lowest: { at: string; value: number } | null;
+}
+
+function actionableTrend(summary: TrendSummary): ActionableTrend | null {
+  const { trend: direction, metric, nowValue, laterValue, lowestAt, lowestValue } = summary;
+  if (direction !== "improving" && direction !== "worsening") return null;
+  if (!metric || nowValue === null || laterValue === null) return null;
+  const lowest = lowestAt && lowestValue !== null ? { at: lowestAt, value: lowestValue } : null;
+  return { direction, metric, nowValue, laterValue, lowest };
+}
+
+const TREND_TEXT = {
+  improving: {
+    title: "Air is forecast to improve later",
+    description:
+      "If your plans are flexible, outdoor errands and airing out the home are better later in the day.",
+  },
+  worsening: {
+    title: "Air is forecast to get worse later",
+    description: "If you need to be outside, earlier is better. Plan to keep windows closed later.",
+  },
+} as const;
+
 /** Whether air is forecast to get noticeably better or worse in the next 12 hours. */
 export const trend: Rule = ({ snapshot, nowMs, fmt, source, confidence }) => {
-  const summary = summarizeTrend(snapshot, nowMs);
-  const { metric, nowValue, laterValue, lowestAt, lowestValue } = summary;
-  if (summary.trend !== "improving" && summary.trend !== "worsening") return null;
-  if (!metric || nowValue === null || laterValue === null) return null;
-  const improving = summary.trend === "improving";
+  const found = actionableTrend(summarizeTrend(snapshot, nowMs));
+  if (!found) return null;
+  const { direction, metric, nowValue, laterValue, lowest } = found;
+  const improving = direction === "improving";
+  const lowestEvidence = lowest
+    ? [`Lowest: ${describeMetricValue(metric, lowest.value)} at ${fmt(lowest.at)}`]
+    : [];
   return {
-    id: `trend-${summary.trend}`,
+    id: `trend-${direction}`,
     category: "outdoor",
-    title: improving ? "Air is forecast to improve later" : "Air is forecast to get worse later",
-    description: improving
-      ? "If your plans are flexible, outdoor errands and airing out the home are better later in the day."
-      : "If you need to be outside, earlier is better. Plan to keep windows closed later.",
+    ...TREND_TEXT[direction],
     reason: `Forecast ${metric === "pm2_5" ? "PM2.5" : "index"} goes from about ${Math.round(nowValue)} in the next 3 hours to about ${Math.round(laterValue)} in 6–12 hours.`,
     evidence: [
       `Next 3 h average: ${describeMetricValue(metric, nowValue)}`,
       `6–12 h average: ${describeMetricValue(metric, laterValue)}`,
-      ...(lowestAt && lowestValue !== null
-        ? [`Lowest: ${describeMetricValue(metric, lowestValue)} at ${fmt(lowestAt)}`]
-        : []),
+      ...lowestEvidence,
     ],
-    recommendedTime: improving && lowestAt ? `After ${fmt(lowestAt)}` : "Earlier rather than later",
+    recommendedTime: improving && lowest ? `After ${fmt(lowest.at)}` : "Earlier rather than later",
     impactType: "exposure-reduction",
     // Forecasts further ahead are less certain than current readings.
     confidence: confidence === "high" ? "medium" : "low",

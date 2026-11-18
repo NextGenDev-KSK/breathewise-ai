@@ -1,46 +1,58 @@
+import type { HourlyPoint } from "@/types/air";
+import type { Activity, CommuteMode } from "@/types/preferences";
 import type { Recommendation } from "@/types/recommendation";
-import { assessConcern } from "@/lib/air/indices";
+import { assessConcern, type ConcernAssessment } from "@/lib/air/indices";
+import type { Verdict } from "@/lib/engine/activities";
 import { MODEL_LIMITATION, NO_INDOOR_SENSOR_NOTE } from "@/lib/content/notices";
 import { describeMetricValue } from "@/lib/engine/analysis";
 import { EMISSION_FACTORS, EMISSION_SOURCE, isOpenAirMode } from "@/lib/engine/emissions";
-import { findOutdoorWindow } from "@/lib/engine/windows";
+import { findOutdoorWindow, type OutdoorWindowResult } from "@/lib/engine/windows";
 import { evidenceFor, makeItem, type PeriodInput, type PlanContext } from "@/lib/engine/plan/context";
 import { lowestHour, PERIODS } from "@/lib/engine/plan/periods";
 import { clockToMinutes, HOUR_MS, localHour } from "@/lib/time";
 
-/** Best time in this period for the user's outdoor activity, if they want one here. */
-export function activityItem(ctx: PlanContext, period: PeriodInput): Recommendation | null {
-  const { prefs } = ctx;
-  const activity = prefs.outdoorActivity;
-  if (activity === "none" || activity === "commuting") return null;
-  if (prefs.preferredActivityTime !== "flexible" && prefs.preferredActivityTime !== period.id) return null;
+/** The activity to plan in this period, or null when the user has none or prefers another period. */
+function plannedActivity(ctx: PlanContext, period: PeriodInput): Activity | null {
+  const { outdoorActivity, preferredActivityTime } = ctx.prefs;
+  if (outdoorActivity === "none" || outdoorActivity === "commuting") return null;
+  const wanted = preferredActivityTime === "flexible" || preferredActivityTime === period.id;
+  return wanted ? outdoorActivity : null;
+}
 
+function periodWindow(ctx: PlanContext, period: PeriodInput, activity: Activity): OutdoorWindowResult {
   const range = PERIODS[period.id];
-  const window = findOutdoorWindow(ctx.snapshot, {
+  return findOutdoorWindow(ctx.snapshot, {
     activity,
-    household: prefs.household,
+    household: ctx.prefs.household,
     nowMs: Math.max(ctx.nowMs, period.hours[0]?.epochMs ?? ctx.nowMs),
     horizonHours: 12,
     hourRange: { start: range.start, end: Math.min(range.end, 24) },
     formatTime: ctx.fmt,
   });
+}
+
+/** Best time in this period for the user's outdoor activity, if they want one here. */
+export function activityItem(ctx: PlanContext, period: PeriodInput): Recommendation | null {
+  const activity = plannedActivity(ctx, period);
+  if (!activity) return null;
+  const window = periodWindow(ctx, period, activity);
   if (window.status !== "ok" || !window.best || !window.metric) return null;
 
   const { best, profile, verdict } = window;
   const when = `${ctx.fmt(best.startTime)}–${ctx.fmt(best.endTime)}`;
-  const descriptions = {
+  const descriptions: Record<Verdict, string> = {
     avoid: `All ${period.id} hours are in a concerning range. If you do go out, ${when} is comparatively lower.`,
     reduce: `Comparatively the cleanest ${period.id} slot, but keep it shorter and lighter than usual.`,
     reasonable: `Comparatively the cleanest ${period.id} slot for this activity.`,
     unknown: "",
-  } as const;
+  };
+  const avoid = verdict === "avoid";
   return makeItem(ctx, period.id, {
     key: "activity",
     category: "outdoor",
-    title:
-      verdict === "avoid"
-        ? `Swap ${profile.label.toLowerCase()} for an indoor alternative`
-        : `${profile.label} at ${when}`,
+    title: avoid
+      ? `Swap ${profile.label.toLowerCase()} for an indoor alternative`
+      : `${profile.label} at ${when}`,
     description: descriptions[verdict],
     reason: window.reasons[0] ?? "",
     evidence: [
@@ -51,7 +63,7 @@ export function activityItem(ctx: PlanContext, period: PeriodInput): Recommendat
     confidence: window.uncertain ? "low" : ctx.confidence,
     limitations: window.uncertaintyNotes,
     caution: window.cautions.join(" ") || undefined,
-    priority: verdict === "avoid" ? 1 : 2,
+    priority: avoid ? 1 : 2,
   });
 }
 
@@ -104,6 +116,62 @@ export function ventilationItem(ctx: PlanContext, period: PeriodInput): Recommen
   });
 }
 
+/** A forecast hour and the concern it implies. */
+type Forecast = { hour: HourlyPoint; concern: ConcernAssessment };
+
+/** The forecast hour containing a "HH:MM" commute time, and its concern, if any. */
+function forecastAtClock(
+  ctx: PlanContext,
+  clock: string,
+): { hour: HourlyPoint; concern: ConcernAssessment } | null {
+  const commuteHour = Math.floor(clockToMinutes(clock) / 60);
+  const hour = ctx.snapshot.hourly.find(
+    (h) => h.epochMs >= ctx.nowMs - HOUR_MS && localHour(h.time) === commuteHour,
+  );
+  const concern = hour ? assessConcern(hour) : null;
+  return hour && concern ? { hour, concern } : null;
+}
+
+const MASK_NOTE =
+  "If you choose to wear a mask, a well-fitted N95/FFP2 respirator filters particles far better than cloth; it does not remove gases.";
+
+/** What to say about this commute: exposure advice on bad hours for open-air modes, else emissions. */
+function commuteDescription(mode: CommuteMode, concern: ConcernAssessment | null, direction: "out" | "back") {
+  const factor = EMISSION_FACTORS[mode];
+  if (concern && concern.level >= 3 && isOpenAirMode(mode)) {
+    const when = direction === "out" ? "departure" : "return";
+    return `Air around your ${when} time is forecast to be ${concern.label.toLowerCase()}. If practical, take an enclosed bus or metro, or shift the trip toward a cleaner hour.`;
+  }
+  if (mode === "car" || mode === "two_wheeler") {
+    const carTip =
+      mode === "car" ? " In the car, keep windows closed and use recirculation in heavy traffic." : "";
+    return `Where practical, a metro or bus trip has lower estimated emissions (${factor.label}: ~${factor.gramsPerPassengerKm} g CO₂e/pkm vs metro ~${EMISSION_FACTORS.metro.gramsPerPassengerKm}).${carTip}`;
+  }
+  const watch = concern && concern.level >= 2 ? " Keep an eye on the forecast for this hour." : "";
+  return `Your ${factor.label.toLowerCase()} commute already has low estimated emissions.${watch}`;
+}
+
+/** Reason, evidence, source and priority, which all depend on whether the commute hour has a forecast. */
+function commuteBasis(ctx: PlanContext, forecast: Forecast | null) {
+  if (!forecast) {
+    return {
+      reason: "Commute advice uses your saved travel mode.",
+      evidence: ["No forecast value for your commute time"],
+      source: EMISSION_SOURCE.title,
+      priority: 4,
+    };
+  }
+  const { hour, concern } = forecast;
+  return {
+    reason: `Forecast air at that hour is ${concern.label.toLowerCase()} concern.`,
+    evidence: [
+      `Forecast at ${ctx.fmt(hour.time)}: ${concern.basis} ${Math.round(concern.value)} (${concern.standardLabel})`,
+    ],
+    source: ctx.source,
+    priority: concern.level >= 3 ? 2 : 4,
+  };
+}
+
 /** Advice for the commute that leaves (or returns) at the user's saved time. */
 export function commuteItem(
   ctx: PlanContext,
@@ -111,44 +179,18 @@ export function commuteItem(
   clock: string,
   direction: "out" | "back",
 ): Recommendation | null {
-  const { prefs, snapshot, nowMs } = ctx;
-  const mode = prefs.commuteMode;
-  if (mode === "none" || prefs.routine === "home") return null;
+  const mode = ctx.prefs.commuteMode;
+  if (mode === "none" || ctx.prefs.routine === "home") return null;
 
-  const commuteHour = Math.floor(clockToMinutes(clock) / 60);
-  const match = snapshot.hourly.find(
-    (h) => h.epochMs >= nowMs - HOUR_MS && localHour(h.time) === commuteHour,
-  );
-  const concern = match ? assessConcern(match) : null;
-  const factor = EMISSION_FACTORS[mode];
+  const forecast = forecastAtClock(ctx, clock);
+  const concern = forecast?.concern ?? null;
   const highExposure = concern !== null && concern.level >= 3 && isOpenAirMode(mode);
-
-  let description: string;
-  if (highExposure) {
-    description = `Air around your ${direction === "out" ? "departure" : "return"} time is forecast to be ${concern.label.toLowerCase()}. If practical, take an enclosed bus or metro, or shift the trip toward a cleaner hour.`;
-  } else if (mode === "car" || mode === "two_wheeler") {
-    const carTip =
-      mode === "car" ? " In the car, keep windows closed and use recirculation in heavy traffic." : "";
-    description = `Where practical, a metro or bus trip has lower estimated emissions (${factor.label}: ~${factor.gramsPerPassengerKm} g CO₂e/pkm vs metro ~${EMISSION_FACTORS.metro.gramsPerPassengerKm}).${carTip}`;
-  } else {
-    const watch = concern && concern.level >= 2 ? " Keep an eye on the forecast for this hour." : "";
-    description = `Your ${factor.label.toLowerCase()} commute already has low estimated emissions.${watch}`;
-  }
-
   return makeItem(ctx, period.id, {
     key: `commute-${direction}`,
     category: "commute",
     title: direction === "out" ? `Commute out at ${clock}` : `Commute home at ${clock}`,
-    description,
-    reason: concern
-      ? `Forecast air at that hour is ${concern.label.toLowerCase()} concern.`
-      : "Commute advice uses your saved travel mode.",
-    evidence:
-      concern && match
-        ? [
-            `Forecast at ${ctx.fmt(match.time)}: ${concern.basis} ${Math.round(concern.value)} (${concern.standardLabel})`,
-          ]
-        : ["No forecast value for your commute time"],
+    description: commuteDescription(mode, concern, direction),
+    ...commuteBasis(ctx, forecast),
     recommendedTime: clock,
     impactType: highExposure ? "exposure-reduction" : "emissions-reduction",
     limitations: [
@@ -156,10 +198,6 @@ export function commuteItem(
       "No route-level pollution data is used.",
       "CO₂e savings do not translate into a measurable local AQI change.",
     ],
-    caution: highExposure
-      ? "If you choose to wear a mask, a well-fitted N95/FFP2 respirator filters particles far better than cloth; it does not remove gases."
-      : undefined,
-    source: concern ? ctx.source : EMISSION_SOURCE.title,
-    priority: concern && concern.level >= 3 ? 2 : 4,
+    caution: highExposure ? MASK_NOTE : undefined,
   });
 }

@@ -1,0 +1,7 @@
+{
+  "path": ["app", "components", "hooks", "lib", "types", "proxy.ts"],
+  "threshold": 0,
+  "reporters": ["console"],
+  "absolute": false,
+  "gitignore": true
+}

@@ -6,9 +6,11 @@ import {
   MAX_BODY_BYTES,
   type AssistantApiSuccess,
   type AssistantErrorCode,
+  type AssistantRequest,
+  type AssistantResponse,
 } from "@/lib/ai/schema";
 import { findUnsupportedClaims, humanizeTimestamps } from "@/lib/ai/guard";
-import { GeminiError, generateAssistantJson, readGeminiConfig } from "@/lib/ai/gemini";
+import { GeminiError, generateAssistantJson, readGeminiConfig, type GeminiConfig } from "@/lib/ai/gemini";
 import { isSameOriginRequest } from "@/lib/security/origin";
 import { clientKey, createRateLimiter } from "@/lib/security/rateLimit";
 
@@ -34,13 +36,20 @@ const MESSAGES: Record<AssistantErrorCode, string> = {
   ai_invalid_output: "The AI response did not pass validation, so it was discarded.",
 };
 
-function fail(
-  code: AssistantErrorCode,
-  status: number,
-  extraHeaders: Record<string, string> = {},
-  message = MESSAGES[code],
-) {
-  return NextResponse.json({ error: code, message }, { status, headers: { ...NO_STORE, ...extraHeaders } });
+/** A rejected request: the error code, HTTP status, and optional headers or message override. */
+interface Failure {
+  code: AssistantErrorCode;
+  status: number;
+  headers?: Record<string, string>;
+  message?: string;
+}
+
+type Step<T> = { ok: true; value: T } | { ok: false; failure: Failure };
+
+const reject = (failure: Failure): { ok: false; failure: Failure } => ({ ok: false, failure });
+
+function failureResponse({ code, status, headers = {}, message = MESSAGES[code] }: Failure) {
+  return NextResponse.json({ error: code, message }, { status, headers: { ...NO_STORE, ...headers } });
 }
 
 /** Reads the body with a hard byte limit, independent of the Content-Length header. */
@@ -64,70 +73,96 @@ async function readLimitedBody(req: NextRequest): Promise<string | null> {
   return new TextDecoder().decode(Buffer.concat(chunks));
 }
 
+function parseJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+}
+
+/** Cheap checks before reading the body: same origin, JSON content type, rate limit. */
+function checkGate(req: NextRequest): Failure | null {
+  // Stops other websites from spending this deployment's AI quota through visitors' browsers.
+  if (!isSameOriginRequest(req.headers, req.url)) return { code: "forbidden_origin", status: 403 };
+  const contentType = req.headers.get("content-type") ?? "";
+  if (!contentType.toLowerCase().startsWith("application/json")) {
+    return { code: "unsupported_media_type", status: 415 };
+  }
+  const rate = limiter(clientKey(req.headers));
+  if (!rate.allowed) {
+    return { code: "rate_limited", status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } };
+  }
+  return null;
+}
+
+/** Reads, parses and validates the body. Only the first validation message is returned, never the input. */
+async function parseRequest(req: NextRequest): Promise<Step<AssistantRequest>> {
+  const raw = await readLimitedBody(req);
+  if (raw === null) return reject({ code: "payload_too_large", status: 413 });
+  const json = parseJson(raw);
+  if (json === undefined) {
+    return reject({ code: "invalid_request", status: 400, message: "The request body is not valid JSON." });
+  }
+  const parsed = AssistantRequestSchema.safeParse(json);
+  if (parsed.success) return { ok: true, value: parsed.data };
+  const first = parsed.error.issues[0];
+  const message = first?.path[0] === "message" ? first.message : MESSAGES.invalid_request;
+  return reject({ code: "invalid_request", status: 400, message });
+}
+
+/** Asks Gemini; maps timeouts, quota and other upstream errors to typed failures. */
+async function askModel(request: AssistantRequest, config: GeminiConfig): Promise<Step<string>> {
+  try {
+    return { ok: true, value: await generateAssistantJson(request, config) };
+  } catch (err) {
+    if (err instanceof GeminiError && err.kind === "timeout")
+      return reject({ code: "ai_timeout", status: 504 });
+    if (err instanceof GeminiError && err.kind === "rate-limited") {
+      return reject({ code: "ai_rate_limited", status: 503, headers: { "Retry-After": "60" } });
+    }
+    // Only the error kind and HTTP status are logged: upstream messages can contain request metadata.
+    const detail = err instanceof GeminiError ? `${err.kind} ${err.status ?? ""}`.trim() : "unknown";
+    console.error("assistant: upstream model error", detail);
+    return reject({ code: "ai_unavailable", status: 502 });
+  }
+}
+
+/** Accepts only schema-valid JSON whose numbers and claims are grounded in the supplied data. */
+function validateOutput(text: string, request: AssistantRequest): Step<AssistantResponse> {
+  const invalid = reject({ code: "ai_invalid_output", status: 502 });
+  const validated = AssistantResponseSchema.safeParse(parseJson(text));
+  if (!validated.success) return invalid;
+  const issues = findUnsupportedClaims(validated.data, request.context);
+  if (issues.length > 0) {
+    console.warn("assistant: rejected model output", issues.length, "issue(s)");
+    return invalid;
+  }
+  const localDate = request.context.observedAt.slice(0, 10);
+  return { ok: true, value: humanizeTimestamps(validated.data, localDate) };
+}
+
 /** Reports whether AI is configured, without exposing any configuration value. */
 export async function GET() {
   return NextResponse.json({ configured: readGeminiConfig() !== null }, { headers: NO_STORE });
 }
 
 export async function POST(req: NextRequest) {
-  // Stops other websites from spending this deployment's AI quota through visitors' browsers.
-  if (!isSameOriginRequest(req.headers, req.url)) return fail("forbidden_origin", 403);
-  const contentType = req.headers.get("content-type") ?? "";
-  if (!contentType.toLowerCase().startsWith("application/json")) return fail("unsupported_media_type", 415);
+  const gate = checkGate(req);
+  if (gate) return failureResponse(gate);
 
-  const rate = limiter(clientKey(req.headers));
-  if (!rate.allowed) return fail("rate_limited", 429, { "Retry-After": String(rate.retryAfterSeconds) });
-
-  const raw = await readLimitedBody(req);
-  if (raw === null) return fail("payload_too_large", 413);
-
-  let json: unknown;
-  try {
-    json = JSON.parse(raw);
-  } catch {
-    return fail("invalid_request", 400, {}, "The request body is not valid JSON.");
-  }
-  const parsed = AssistantRequestSchema.safeParse(json);
-  if (!parsed.success) {
-    // Only the first issue's message is returned; never the input itself.
-    const first = parsed.error.issues[0];
-    const message = first?.path[0] === "message" ? first.message : MESSAGES.invalid_request;
-    return fail("invalid_request", 400, {}, message);
-  }
+  const request = await parseRequest(req);
+  if (!request.ok) return failureResponse(request.failure);
 
   const config = readGeminiConfig();
-  if (!config) return fail("ai_not_configured", 503);
+  if (!config) return failureResponse({ code: "ai_not_configured", status: 503 });
 
-  let text: string;
-  try {
-    text = await generateAssistantJson(parsed.data, config);
-  } catch (err) {
-    if (err instanceof GeminiError && err.kind === "timeout") return fail("ai_timeout", 504);
-    if (err instanceof GeminiError && err.kind === "rate-limited")
-      return fail("ai_rate_limited", 503, { "Retry-After": "60" });
-    // Only the error kind and HTTP status are logged: upstream messages can contain request metadata.
-    console.error(
-      "assistant: upstream model error",
-      err instanceof GeminiError ? `${err.kind} ${err.status ?? ""}`.trim() : "unknown",
-    );
-    return fail("ai_unavailable", 502);
-  }
+  const text = await askModel(request.value, config);
+  if (!text.ok) return failureResponse(text.failure);
 
-  let output: unknown;
-  try {
-    output = JSON.parse(text);
-  } catch {
-    return fail("ai_invalid_output", 502);
-  }
-  const validated = AssistantResponseSchema.safeParse(output);
-  if (!validated.success) return fail("ai_invalid_output", 502);
-  const issues = findUnsupportedClaims(validated.data, parsed.data.context);
-  if (issues.length > 0) {
-    console.warn("assistant: rejected model output", issues.length, "issue(s)");
-    return fail("ai_invalid_output", 502);
-  }
+  const output = validateOutput(text.value, request.value);
+  if (!output.ok) return failureResponse(output.failure);
 
-  const response = humanizeTimestamps(validated.data, parsed.data.context.observedAt.slice(0, 10));
-  const body: AssistantApiSuccess = { source: "gemini", model: config.model, response };
+  const body: AssistantApiSuccess = { source: "gemini", model: config.model, response: output.value };
   return NextResponse.json(body, { headers: NO_STORE });
 }

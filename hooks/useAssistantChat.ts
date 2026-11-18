@@ -90,12 +90,12 @@ export function useAssistantChat() {
         { role: "assistant" as const, text: (turn.answer?.summary ?? "").slice(0, HISTORY_TEXT_LIMIT) },
       ]);
       try {
-        const result = await askGemini(
-          question,
+        const result = await askGemini({
+          message: question,
           history,
-          buildAssistantContext(snapshot, preferences, nowMs),
-          controller.signal,
-        );
+          context: buildAssistantContext(snapshot, preferences, nowMs),
+          signal: controller.signal,
+        });
         updateTurn(
           id,
           result.ok

@@ -4,21 +4,23 @@ This audit started from the first competition evaluation (96.83/100): **Code Qua
 
 ## Before and after
 
-| Metric (production source: `app`, `components`, `hooks`, `lib`, `types`)                | Before                      | After                                                                                                                                               |
-| --------------------------------------------------------------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Lint-rule suppressions (`eslint-disable`)                                               | 4                           | **0**                                                                                                                                               |
-| Lines matching `as SomeType` (grep heuristic; also matches import aliases and comments) | 32                          | **3**: 1 real cast (documented, `lib/collections.ts`) + 1 import alias + 1 comment                                                                  |
-| Non-null assertions (`!`)                                                               | 1                           | **0**                                                                                                                                               |
-| Largest source file                                                                     | 455 lines (`dailyPlan.ts`)  | 280 lines (`lib/ai/fallback/index.ts`); plan logic split over 5 files                                                                               |
-| Unused exports / types / files (Knip)                                                   | 28 / 36 / 2                 | **0 / 0 / 0**                                                                                                                                       |
-| Undeclared dependencies (Knip)                                                          | 1 (`postcss`)               | **0**                                                                                                                                               |
-| Files not matching the formatter (Prettier)                                             | 98                          | **0**                                                                                                                                               |
-| ESLint rule set                                                                         | Next + syntactic TypeScript | + type-aware rules (floating promises, misused promises, exhaustive switches, unnecessary assertions, non-null assertions, consistent type imports) |
-| Unit/integration/component tests                                                        | 191 (15 files)              | **245** (19 files)                                                                                                                                  |
-| Statement / line coverage (all source)                                                  | 77.2 % / 78.4 %             | **92.7 % / 94.3 %**, enforced thresholds                                                                                                            |
-| End-to-end browsers                                                                     | Chromium                    | Chromium (desktop + mobile), Firefox; WebKit in CI                                                                                                  |
-| Lighthouse Performance (mobile, `/`, `/commute`, `/assistant`)                          | 92–93, 91, 91               | **94, 96, 95–99**                                                                                                                                   |
-| Total blocking time (`/`, `/commute`)                                                   | 240–320 ms, 250 ms          | **80 ms, 40 ms**                                                                                                                                    |
+| Metric (production source: `app`, `components`, `hooks`, `lib`, `types`)                              | Before                      | After                                                                                                                                               |
+| ----------------------------------------------------------------------------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lint-rule suppressions (`eslint-disable`)                                                             | 4                           | **0**                                                                                                                                               |
+| Lines matching `as SomeType` (grep heuristic; also matches import aliases and comments)               | 32                          | **3**: 1 real cast (documented, `lib/collections.ts`) + 1 import alias + 1 comment                                                                  |
+| Non-null assertions (`!`)                                                                             | 1                           | **0**                                                                                                                                               |
+| Largest source file                                                                                   | 455 lines (`dailyPlan.ts`)  | 296 lines (`lib/engine/windows.ts`); every file now capped at 300 lines by lint                                                                     |
+| Unused exports / types / files (Knip)                                                                 | 28 / 36 / 2                 | **0 / 0 / 0**                                                                                                                                       |
+| Undeclared dependencies (Knip)                                                                        | 1 (`postcss`)               | **0**                                                                                                                                               |
+| Files not matching the formatter (Prettier)                                                           | 98                          | **0**                                                                                                                                               |
+| Functions over the complexity/size budgets (complexity > 12, nesting > 3, > 4 parameters, > 80 lines) | 18                          | **0**, enforced as lint errors                                                                                                                      |
+| Copy-pasted code blocks (jscpd)                                                                       | not measured                | **0 clones**, enforced in CI (`npm run lint:duplicates`)                                                                                            |
+| ESLint rule set                                                                                       | Next + syntactic TypeScript | + type-aware rules (floating promises, misused promises, exhaustive switches, unnecessary assertions, non-null assertions, consistent type imports) |
+| Unit/integration/component tests                                                                      | 191 (15 files)              | **246** (19 files)                                                                                                                                  |
+| Statement / line coverage (all source)                                                                | 77.2 % / 78.4 %             | **92.9 % / 94.7 %**, enforced thresholds                                                                                                            |
+| End-to-end browsers                                                                                   | Chromium                    | Chromium (desktop + mobile), Firefox; WebKit in CI                                                                                                  |
+| Lighthouse Performance (mobile, `/`, `/commute`, `/assistant`)                                        | 92–93, 91, 91               | **94, 96, 95–99**                                                                                                                                   |
+| Total blocking time (`/`, `/commute`)                                                                 | 240–320 ms, 250 ms          | **80 ms, 40 ms**                                                                                                                                    |
 
 ## Root causes and fixes
 
@@ -117,6 +119,26 @@ This audit started from the first competition evaluation (96.83/100): **Code Qua
 | The "Use my location" button held two copies of its label and relied on CSS to hide one. Without CSS (or with CSS overridden) its accessible name was doubled.                                                                                                                                           | It now has a single label that is visually hidden only on small screens.                                                                                   |
 | **Found by the new WebKit runs:** the CSP always sent `upgrade-insecure-requests`. WebKit (Safari) applies it even to `http://localhost`, rewriting the page's own scripts to `https://` so they never loaded. This broke local HTTP testing in Safari; production is HTTPS, so users were not affected. | The directive is now sent only when the request arrived over HTTPS (`proxy.ts`). Covered by "upgrades insecure requests only for pages served over HTTPS". |
 
+### 9. Complexity and size budgets (second pass)
+
+A second pass measured every function in shipped code with ESLint's `complexity`, `max-depth`, `max-params` and `max-lines-per-function` rules. It found 18 functions over budget. All 18 were refactored, and the budgets are now **errors** in `eslint.config.mjs` (plus `max-lines: 300` per file), so they cannot come back.
+
+| Over budget                              | Refactor                                                                                                                                                                                                                         |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /api/assistant` (one long handler) | A pipeline of small steps: `checkGate` (origin 403, content type 415, rate limit 429) → `parseRequest` (413/400) → `askModel` (504/503/502) → `validateOutput` (502). Each step returns a typed `Step<T>` or a `Failure`.        |
+| `findOutdoorWindow`                      | Split into `candidateHours`, `scanSlots`, `windowReasons`, `windowCautions` and `windowUncertainty`, sharing a `SearchContext`. Magic numbers became named constants (`MAX_MISSING_SHARE`, `MIN_SLOTS`, `SIMILAR_VALUES_SHARE`). |
+| Plan items (activity, commute)           | `plannedActivity`, `periodWindow`, `forecastAtClock` and `commuteBasis` helpers; the afternoon builder became three named builders.                                                                                              |
+| Indoor checklist and ventilation advice  | A declarative `CHECKLIST` table with `when` predicates; `cleanerTimeLater` and `adviceText` helpers.                                                                                                                             |
+| Outdoor trend rule                       | `actionableTrend` plus a `TREND_TEXT` table.                                                                                                                                                                                     |
+| `askGemini` (5 positional parameters)    | One typed `AskOptions` object.                                                                                                                                                                                                   |
+| `HourlyChart`                            | `chart/geometry.ts` (pure, memoised), `ChartPlot`, `ChartLegend`, `ChartDataTable`.                                                                                                                                              |
+| `LocationPicker`                         | `useCombobox` hook (keyboard handler map, outside-click close) + `PlaceListbox` + `DetectLocationButton`.                                                                                                                        |
+| `ForecastView`, `OutdoorWindowPlanner`   | `ForecastChartCard`, `DailyOverview`, `ActivityPicker`, `WindowResult` (typed `Record<Verdict, …>` styles).                                                                                                                      |
+| `PlanView`, `PreferencesForm`            | `PreferencesCard`, `PlanPeriodCard`; `RoutineFields`, `HouseholdFields`, `EquipmentFields` and `FormErrors`.                                                                                                                     |
+| `AssistantAnswer`                        | `SourceBadge`, `TopActions`, `AnswerDetails`, with a shared `Detail` row and `BulletList`.                                                                                                                                       |
+
+Every label, accessible name and piece of text is unchanged; the existing component, axe and end-to-end tests pass without edits (only the `askGemini` call sites in one integration test changed to the new options object).
+
 ## Security changes (Security 99)
 
 | Change                                                                                                                                                                                                  | Evidence                                                                                                                |
@@ -148,13 +170,15 @@ None in functionality. Small consistent improvements:
 
 ```bash
 npm ci
-npm run format:check && npm run lint && npm run lint:unused && npm run typecheck
-npm run test:coverage                       # 245 tests + enforced coverage
+npm run format:check && npm run lint && npm run lint:unused && npm run lint:duplicates && npm run typecheck
+npm run test:coverage                       # 246 tests + enforced coverage
 npx playwright install chromium firefox
 npx playwright test --project=desktop-chromium --project=mobile-chromium --project=desktop-firefox --repeat-each=2
 grep -rn "eslint-disable" app components hooks lib types proxy.ts | wc -l          # 0
 find app components hooks lib types proxy.ts -name "*.ts*" | xargs wc -l | sort -rn | head -3
 npx knip                                    # no findings
+# The lint step already enforces: complexity 12, max-depth 3, max-params 4,
+# max-lines-per-function 80, max-lines 300 (eslint.config.mjs)
 npm run build && npx next start -p 3100 &   # then:
 curl -s -o /dev/null -w "%{http_code}\n" -X POST -H "content-type: application/json" \
   -H "sec-fetch-site: cross-site" -d '{}' http://localhost:3100/api/assistant   # 403
