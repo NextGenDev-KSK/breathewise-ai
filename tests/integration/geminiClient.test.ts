@@ -2,11 +2,17 @@ import { describe, expect, it, vi } from "vitest";
 import { GOOD_RESPONSE, delhiContext } from "../fixtures/ai";
 
 const generateContent = vi.fn();
+class ApiError extends Error {
+  constructor(readonly status: number) {
+    super(`upstream ${status}`);
+  }
+}
 vi.mock("@google/genai", () => ({
   GoogleGenAI: vi.fn(function GoogleGenAI() {
     return { models: { generateContent } };
   }),
   ThinkingLevel: { LOW: "LOW" },
+  ApiError,
 }));
 
 const { generateAssistantJson, GeminiError } = await import("@/lib/ai/gemini");
@@ -26,8 +32,17 @@ describe("generateAssistantJson (Gemini SDK mocked)", () => {
     expect(call.config.responseJsonSchema.required).toContain("uncertainties");
     expect(call.config.systemInstruction).toMatch(/Never invent AQI values/);
     expect(call.config.maxOutputTokens).toBeLessThanOrEqual(4096);
+    expect(call.config.httpOptions.retryOptions).toMatchObject({ attempts: 3, httpStatusCodes: expect.arrayContaining([429, 503]) });
+    expect(call.config.abortSignal).toBeInstanceOf(AbortSignal);
     expect(call.contents).toContain("Can I walk now?");
     expect(call.contents).not.toMatch(/latitude|longitude|28\.65/);
+  });
+
+  it("maps quota and server errors by upstream status", async () => {
+    generateContent.mockRejectedValue(new ApiError(429));
+    await expect(generateAssistantJson(req, config)).rejects.toMatchObject({ kind: "rate-limited", status: 429 });
+    generateContent.mockRejectedValue(new ApiError(503));
+    await expect(generateAssistantJson(req, config)).rejects.toMatchObject({ kind: "unavailable", status: 503 });
   });
 
   it("maps empty output, failures and timeouts to typed errors", async () => {

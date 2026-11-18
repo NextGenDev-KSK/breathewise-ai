@@ -1,12 +1,16 @@
 import "server-only";
-import { GoogleGenAI, ThinkingLevel } from "@google/genai";
+import { ApiError, GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { ASSISTANT_RESPONSE_JSON_SCHEMA } from "@/lib/ai/schema";
 import { SYSTEM_INSTRUCTION, buildUserPrompt } from "@/lib/ai/prompt";
 import type { AssistantRequest } from "@/lib/ai/schema";
 
 /** Stable Flash model verified against the Gemini API model list on 2026-11-17. */
 export const DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
-export const GEMINI_TIMEOUT_MS = 20_000;
+/** Overall budget for one answer, including SDK retries. The route allows 60 s. */
+export const GEMINI_TIMEOUT_MS = 30_000;
+
+/** Bounded retries for quota (429) and transient server errors, with short backoff. */
+export const GEMINI_RETRY = { attempts: 3, initialDelay: 1, maxDelay: 4, expBase: 2, httpStatusCodes: [429, 500, 502, 503, 504] };
 
 export interface GeminiConfig {
   apiKey: string;
@@ -24,7 +28,11 @@ export function readGeminiConfig(env: NodeJS.ProcessEnv = process.env): GeminiCo
 }
 
 export class GeminiError extends Error {
-  constructor(readonly kind: "timeout" | "unavailable" | "empty") {
+  constructor(
+    readonly kind: "timeout" | "rate-limited" | "unavailable" | "empty",
+    /** Upstream HTTP status, when known. Safe to log: it contains no user data. */
+    readonly status?: number,
+  ) {
     super(`Gemini request failed: ${kind}`);
     this.name = "GeminiError";
   }
@@ -47,10 +55,11 @@ export async function generateAssistantJson(
         systemInstruction: SYSTEM_INSTRUCTION,
         responseMimeType: "application/json",
         responseJsonSchema: ASSISTANT_RESPONSE_JSON_SCHEMA,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 1400,
         thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+        // Our own signal enforces the overall budget, so a timeout is always reported as one.
         abortSignal: controller.signal,
-        httpOptions: { timeout: timeoutMs },
+        httpOptions: { retryOptions: GEMINI_RETRY },
       },
     });
     const text = result.text;
@@ -59,6 +68,7 @@ export async function generateAssistantJson(
   } catch (err) {
     if (err instanceof GeminiError) throw err;
     if (controller.signal.aborted) throw new GeminiError("timeout");
+    if (err instanceof ApiError) throw new GeminiError(err.status === 429 ? "rate-limited" : "unavailable", err.status);
     throw new GeminiError("unavailable");
   } finally {
     clearTimeout(timer);

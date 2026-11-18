@@ -107,6 +107,14 @@ describe("POST /api/assistant", () => {
     expect(text).not.toMatch(/stack|test-key|Error:/);
   });
 
+  it("reports an exhausted AI quota distinctly, with Retry-After", async () => {
+    generate.mockRejectedValue(new GeminiError("rate-limited", 429));
+    const res = await POST(request(valid()));
+    expect(res.status).toBe(503);
+    expect(res.headers.get("retry-after")).toBe("60");
+    expect((await res.json()).error).toBe("ai_rate_limited");
+  });
+
   it("passes only validated data to the model (no coordinates)", async () => {
     generate.mockResolvedValue(JSON.stringify(GOOD_RESPONSE));
     await POST(request({ ...valid(), context: { ...delhiContext(), latitude: 28.65 } }));

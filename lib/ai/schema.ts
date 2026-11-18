@@ -28,7 +28,7 @@ export const ASSISTANT_RESPONSE_JSON_SCHEMA = {
     top_actions: {
       type: "array",
       minItems: 1,
-      maxItems: 5,
+      maxItems: 4,
       items: {
         type: "object",
         properties: {
@@ -132,6 +132,7 @@ export const ASSISTANT_ERROR_CODES = [
   "rate_limited",
   "ai_not_configured",
   "ai_timeout",
+  "ai_rate_limited",
   "ai_unavailable",
   "ai_invalid_output",
 ] as const;

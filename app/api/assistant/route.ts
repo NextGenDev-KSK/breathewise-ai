@@ -13,6 +13,8 @@ import { clientKey, createRateLimiter } from "@/lib/security/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+/** Leaves headroom above the 30 s Gemini budget so the platform never cuts a request short. */
+export const maxDuration = 60;
 
 
 const limiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
@@ -26,6 +28,7 @@ const MESSAGES: Record<AssistantErrorCode, string> = {
   rate_limited: "Too many questions in a short time. Please wait a moment.",
   ai_not_configured: "The AI assistant is not configured on this server. Rule-based guidance is available.",
   ai_timeout: "The AI assistant took too long to respond.",
+  ai_rate_limited: "The AI service's usage limit was reached. Please try again in a minute.",
   ai_unavailable: "The AI assistant is temporarily unavailable.",
   ai_invalid_output: "The AI response did not pass validation, so it was discarded.",
 };
@@ -92,8 +95,9 @@ export async function POST(req: NextRequest) {
     text = await generateAssistantJson(parsed.data, config);
   } catch (err) {
     if (err instanceof GeminiError && err.kind === "timeout") return fail("ai_timeout", 504);
-    // Deliberately no details: upstream errors can contain request metadata.
-    console.error("assistant: upstream model error", err instanceof GeminiError ? err.kind : "unknown");
+    if (err instanceof GeminiError && err.kind === "rate-limited") return fail("ai_rate_limited", 503, { "Retry-After": "60" });
+    // Only the error kind and HTTP status are logged: upstream messages can contain request metadata.
+    console.error("assistant: upstream model error", err instanceof GeminiError ? `${err.kind} ${err.status ?? ""}`.trim() : "unknown");
     return fail("ai_unavailable", 502);
   }
 
