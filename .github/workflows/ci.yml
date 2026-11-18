@@ -11,7 +11,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,6 +24,12 @@ jobs:
       - run: npm run lint:unused
       - run: npm run typecheck
       - run: npm run test:coverage
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      # System libraries are always installed; browser downloads come from the cache when available.
       - run: npx playwright install --with-deps chromium firefox webkit
       - run: npm run test:e2e
         env:
