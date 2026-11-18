@@ -53,6 +53,12 @@ describe("POST /api/assistant", () => {
     expect(body.response.summary).toBe(GOOD_RESPONSE.summary);
   });
 
+  it("rewrites raw timestamps in model output for display", async () => {
+    generate.mockResolvedValue(JSON.stringify({ ...GOOD_RESPONSE, timing: "Best at 2026-11-17T15:00." }));
+    const body = await (await POST(request(valid()))).json();
+    expect(body.response.timing).toBe("Best at 15:00 today.");
+  });
+
   it("returns 503 ai_not_configured when no key is set (client falls back to rules)", async () => {
     vi.stubEnv("GEMINI_API_KEY", "");
     const res = await POST(request(valid()));

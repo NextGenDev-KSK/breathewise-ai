@@ -1,4 +1,5 @@
 import type { AssistantContext, AssistantResponse } from "@/lib/ai/schema";
+import { formatDay } from "@/lib/time";
 
 /**
  * Post-validation checks for model output. Rejects answers that make guarantees or that
@@ -41,6 +42,32 @@ function knownValues(ctx: AssistantContext): number[] {
 function isSupported(n: number, known: number[]): boolean {
   // Allow rounding: within 1 unit or 5%, whichever is larger.
   return known.some((k) => Math.abs(k - n) <= Math.max(1, k * 0.05));
+}
+
+const RAW_TIMESTAMP = /\b(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})\b/g;
+
+/**
+ * Safety net for display: rewrites raw "2026-11-18T15:00" timestamps as "15:00 today",
+ * "15:00 tomorrow" or "Fri 20 Nov, 15:00", relative to the data's local date.
+ */
+export function humanizeTimestamps(response: AssistantResponse, localDate: string): AssistantResponse {
+  const tomorrow = new Date(Date.parse(`${localDate}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+  const fix = (text: string) =>
+    text.replace(RAW_TIMESTAMP, (_, day: string, time: string) =>
+      day === localDate ? `${time} today` : day === tomorrow ? `${time} tomorrow` : `${formatDay(`${day}T${time}`)}, ${time}`,
+    );
+  return {
+    ...response,
+    summary: fix(response.summary),
+    risk_context: fix(response.risk_context),
+    top_actions: response.top_actions.map((a) => ({ action: fix(a.action), why: fix(a.why), when: fix(a.when) })),
+    timing: fix(response.timing),
+    indoor_recommendations: response.indoor_recommendations.map(fix),
+    commute_recommendation: fix(response.commute_recommendation),
+    environmental_impact: fix(response.environmental_impact),
+    uncertainties: response.uncertainties.map(fix),
+    disclaimer: fix(response.disclaimer),
+  };
 }
 
 export function findUnsupportedClaims(response: AssistantResponse, ctx: AssistantContext): string[] {

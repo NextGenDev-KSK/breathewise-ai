@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AssistantContextSchema, AssistantRequestSchema, AssistantResponseSchema } from "@/lib/ai/schema";
-import { findUnsupportedClaims } from "@/lib/ai/guard";
+import { findUnsupportedClaims, humanizeTimestamps } from "@/lib/ai/guard";
 import { buildRuleBasedAnswer, detectIntent } from "@/lib/ai/fallback";
 import { buildUserPrompt, SYSTEM_INSTRUCTION } from "@/lib/ai/prompt";
 import { DELHI_NOW, prefs } from "../fixtures/builders";
@@ -72,6 +72,17 @@ describe("findUnsupportedClaims", () => {
     expect(findUnsupportedClaims({ ...GOOD_RESPONSE, summary: "It is completely safe to go out." }, ctx).length).toBeGreaterThan(0);
     expect(findUnsupportedClaims({ ...GOOD_RESPONSE, timing: "This will reduce your exposure by 60%." }, ctx)).toContain("quantified benefit claim");
     expect(findUnsupportedClaims({ ...GOOD_RESPONSE, summary: "We guarantee protection." }, ctx).length).toBeGreaterThan(0);
+  });
+});
+
+describe("humanizeTimestamps", () => {
+  it("rewrites raw timestamps relative to the data's local date", () => {
+    const r = humanizeTimestamps(
+      { ...GOOD_RESPONSE, summary: "Walk between 2026-11-17T15:00 and 2026-11-18T07:00, or on 2026-11-20T09:00." },
+      "2026-11-17",
+    );
+    expect(r.summary).toBe("Walk between 15:00 today and 07:00 tomorrow, or on Fri 20 Nov, 09:00.");
+    expect(r.top_actions).toEqual(GOOD_RESPONSE.top_actions);
   });
 });
 

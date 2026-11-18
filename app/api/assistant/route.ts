@@ -7,7 +7,7 @@ import {
   type AssistantApiSuccess,
   type AssistantErrorCode,
 } from "@/lib/ai/schema";
-import { findUnsupportedClaims } from "@/lib/ai/guard";
+import { findUnsupportedClaims, humanizeTimestamps } from "@/lib/ai/guard";
 import { GeminiError, generateAssistantJson, readGeminiConfig } from "@/lib/ai/gemini";
 import { clientKey, createRateLimiter } from "@/lib/security/rateLimit";
 
@@ -115,6 +115,7 @@ export async function POST(req: NextRequest) {
     return fail("ai_invalid_output", 502);
   }
 
-  const body: AssistantApiSuccess = { source: "gemini", model: config.model, response: validated.data };
+  const response = humanizeTimestamps(validated.data, parsed.data.context.observedAt.slice(0, 10));
+  const body: AssistantApiSuccess = { source: "gemini", model: config.model, response };
   return NextResponse.json(body, { headers: NO_STORE });
 }
