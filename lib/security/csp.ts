@@ -10,6 +10,11 @@ interface CspOptions {
   secure: boolean;
 }
 
+/**
+ * Strict Content-Security-Policy for one page response: nonce-based scripts with `strict-dynamic`,
+ * connections only to this origin and Open-Meteo, no framing or plugins. `upgrade-insecure-requests`
+ * is added only over HTTPS; `unsafe-eval` and websockets only in development.
+ */
 export function buildContentSecurityPolicy(nonce: string, { isDev, secure }: CspOptions): string {
   const directives = [
     "default-src 'self'",

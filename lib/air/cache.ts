@@ -9,16 +9,19 @@ const MAX_CACHED_PLACES = 20;
 
 const cache = new Map<string, AirQualitySnapshot>();
 
+/** Cache key for a location, rounded to ~1 km so nearby lookups share an entry. */
 export function cacheKey(place: Pick<Place, "latitude" | "longitude">): string {
   return `${place.latitude.toFixed(2)},${place.longitude.toFixed(2)}`;
 }
 
+/** The cached snapshot for a place if it is younger than `CACHE_TTL_MS`, otherwise null. */
 export function getCached(place: Place, nowMs: number): AirQualitySnapshot | null {
   const hit = cache.get(cacheKey(place));
   if (!hit || nowMs - hit.fetchedAt > CACHE_TTL_MS) return null;
   return { ...hit, place };
 }
 
+/** Caches a snapshot, evicting the oldest place beyond `MAX_CACHED_PLACES`. */
 export function setCached(snapshot: AirQualitySnapshot): void {
   cache.set(cacheKey(snapshot.place), snapshot);
   if (cache.size > MAX_CACHED_PLACES) {
@@ -32,6 +35,7 @@ export function invalidateCached(place: Place): void {
   cache.delete(cacheKey(place));
 }
 
+/** Empties the in-memory cache (used when the user clears their data, and between tests). */
 export function clearCache(): void {
   cache.clear();
 }

@@ -5,6 +5,7 @@ import { DailyOverview } from "@/components/forecast/DailyOverview";
 import { ForecastChartCard } from "@/components/forecast/ForecastChartCard";
 import { OutdoorWindowPlanner } from "@/components/forecast/OutdoorWindowPlanner";
 
+/** The forecast page for the selected location, shown once air data is available. */
 export function ForecastView() {
   return (
     <AirDataGate>

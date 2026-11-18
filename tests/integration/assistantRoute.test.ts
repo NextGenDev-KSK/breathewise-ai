@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { delhiContext, GOOD_RESPONSE } from "../fixtures/ai";
+import { delhiContext, GOOD_RESPONSE } from "@/tests/fixtures/ai";
 import type * as GeminiModule from "@/lib/ai/gemini";
 
 const generate = vi.fn<(...args: unknown[]) => Promise<string>>();

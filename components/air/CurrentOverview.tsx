@@ -72,6 +72,10 @@ function IndexBlock({
   );
 }
 
+/**
+ * Headline card: the current concern level, the main pollutant, and both index scales (the user's
+ * preferred one first), each clearly labelled with its standard.
+ */
 export function CurrentOverview({ snapshot }: { snapshot: AirQualitySnapshot }) {
   const { settings, formatTime } = useApp();
   const concern = currentConcern(snapshot);

@@ -65,6 +65,7 @@ function MissionComplete({
   );
 }
 
+/** The 7-day clean-air mission: today's actions, weekly chart and habit totals, saved in this browser. */
 export function MissionTracker() {
   const { ready } = useApp();
   const toast = useToast();

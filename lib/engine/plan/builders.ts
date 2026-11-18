@@ -8,6 +8,7 @@ import { relativeDayLabel } from "@/lib/time";
 
 type PeriodBuilder = (ctx: PlanContext, period: PeriodInput) => (Recommendation | null)[];
 
+/** Morning: outdoor activity window, ventilation, and the commute out. */
 const morning: PeriodBuilder = (ctx, period) => [
   activityItem(ctx, period),
   ventilationItem(ctx, period),
@@ -92,12 +93,14 @@ const afternoonLowEmission: ItemBuilder = (ctx, { id }) => {
   });
 };
 
+/** Afternoon: exposure, indoor and low-emission suggestions. */
 const afternoon: PeriodBuilder = (ctx, period) => [
   afternoonExposure(ctx, period),
   afternoonIndoor(ctx, period),
   afternoonLowEmission(ctx, period),
 ];
 
+/** Evening: activity window, the commute home, cooking ventilation and avoiding incense or coils. */
 const evening: PeriodBuilder = (ctx, period) => {
   const { stats, label } = period;
   const elevated = isElevated(stats);
@@ -139,6 +142,7 @@ const evening: PeriodBuilder = (ctx, period) => {
   ];
 };
 
+/** Night: whether to keep the bedroom closed, ventilation, and a reminder to check tomorrow's plan. */
 const night: PeriodBuilder = (ctx, period) => {
   const { stats, label } = period;
   const elevated = isElevated(stats);

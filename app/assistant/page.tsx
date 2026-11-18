@@ -4,6 +4,7 @@ import { AssistantChat } from "@/components/assistant/AssistantChat";
 
 export const metadata: Metadata = { title: "AI Clean-Air Assistant" };
 
+/** Route `/assistant`: the AI clean-air assistant, grounded in the selected location's data. */
 export default function AssistantPage() {
   return (
     <>

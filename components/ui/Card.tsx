@@ -1,6 +1,7 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import { cn } from "@/components/ui/cn";
 
+/** Surface container used for every content block. */
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
@@ -10,6 +11,7 @@ export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   );
 }
 
+/** Card heading row with an optional icon, description and trailing action. */
 export function CardHeader({
   title,
   description,

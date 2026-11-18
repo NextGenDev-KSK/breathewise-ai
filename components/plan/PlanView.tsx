@@ -63,6 +63,7 @@ function Plan({ snapshot }: { snapshot: AirQualitySnapshot }) {
   );
 }
 
+/** The clean-air day plan for the selected location, shown once air data is available. */
 export function PlanView() {
   return <AirDataGate>{(s) => <Plan snapshot={s} />}</AirDataGate>;
 }

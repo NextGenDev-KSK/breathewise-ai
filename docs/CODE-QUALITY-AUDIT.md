@@ -15,9 +15,10 @@ This audit started from the first competition evaluation (96.83/100): **Code Qua
 | Files not matching the formatter (Prettier)                                                           | 98                          | **0**                                                                                                                                               |
 | Functions over the complexity/size budgets (complexity > 12, nesting > 3, > 4 parameters, > 80 lines) | 18                          | **0**, enforced as lint errors                                                                                                                      |
 | Copy-pasted code blocks (jscpd)                                                                       | not measured                | **0 clones**, enforced in CI (`npm run lint:duplicates`)                                                                                            |
+| Exported functions without a doc comment                                                              | 70 of 213                   | **0**, enforced (`jsdoc/require-jsdoc`)                                                                                                             |
 | ESLint rule set                                                                                       | Next + syntactic TypeScript | + type-aware rules (floating promises, misused promises, exhaustive switches, unnecessary assertions, non-null assertions, consistent type imports) |
-| Unit/integration/component tests                                                                      | 191 (15 files)              | **246** (19 files)                                                                                                                                  |
-| Statement / line coverage (all source)                                                                | 77.2 % / 78.4 %             | **92.9 % / 94.7 %**, enforced thresholds                                                                                                            |
+| Unit/integration/component tests                                                                      | 191 (15 files)              | **305** (62 files mirroring the source tree)                                                                                                        |
+| Statement / branch / line coverage (all source)                                                       | 77.2 % / – / 78.4 %         | **97.1 % / 85.8 % / 98.2 %**, enforced thresholds (95 / 84 / 96)                                                                                    |
 | End-to-end browsers                                                                                   | Chromium                    | Chromium (desktop + mobile), Firefox; WebKit in CI                                                                                                  |
 | Lighthouse Performance (mobile, `/`, `/commute`, `/assistant`)                                        | 92–93, 91, 91               | **94, 96, 95–99**                                                                                                                                   |
 | Total blocking time (`/`, `/commute`)                                                                 | 240–320 ms, 250 ms          | **80 ms, 40 ms**                                                                                                                                    |
@@ -32,7 +33,7 @@ This audit started from the first competition evaluation (96.83/100): **Code Qua
 - `lib/storage.ts` is now a subscribable store: writes notify listeners, and the browser `storage` event syncs other tabs. `storedSnapshotReader` returns referentially stable, validated snapshots.
 - `hooks/useStoredState.ts` reads the store through React's `useSyncExternalStore`.
 - `hooks/useHydrated.ts` replaces the "loaded" flags.
-  **Evidence.** `tests/unit/hooks.test.tsx` → "storage store" and "useStoredState": two components stay in sync; clear resets them; invalid data falls back; another tab's changes are picked up.
+  **Evidence.** `tests/unit/lib/storage.test.ts` → "storage store" and `tests/unit/hooks/useStoredState.test.tsx`: two components stay in sync; clear resets them; invalid data falls back; another tab's changes are picked up.
 
 ### 2. Data fetching set state synchronously inside an effect (removed 1 lint suppression)
 
@@ -42,13 +43,13 @@ This audit started from the first competition evaluation (96.83/100): **Code Qua
 - `hooks/useAirQuality.ts` derives `loading`, `refreshing`, `success` and `error` from a request key. State is set only in async callbacks, and every new request aborts the previous one.
 - Cache and offline-copy logic moved to `lib/air/cache.ts` (`loadAirQuality`, `savedSnapshotFor`, `invalidateCached`).
 - `AppProvider` is now a composition of hooks.
-  **Evidence.** `tests/unit/hooks.test.tsx` → "useAirQuality": loading then success, idle, error, labelled saved copy, refresh keeps data visible, cache hit avoids a second request, demo mode never fetches.
+  **Evidence.** `tests/unit/hooks/useAirQuality.test.tsx`: loading then success, idle, error, labelled saved copy, refresh keeps data visible, cache hit avoids a second request, demo mode never fetches.
 
 ### 3. Full page reload to clear data (removed the last lint suppression)
 
 **Cause.** Settings → "Clear all local data" called `window.location.assign("/")` to reset in-memory state, which needed a suppressed Next.js rule.
 **Fix.** Clearing storage now notifies every subscriber, so the app resets in place, then navigates with the router (`components/settings/PrivacySettings.tsx`).
-**Evidence.** `tests/unit/components/pages.test.tsx` → "SettingsPanel … clears all local data after confirmation".
+**Evidence.** `tests/unit/components/settings/SettingsPanel.test.tsx` → "clears all local data after confirmation".
 
 ### 4. Duplicated logic
 
@@ -139,6 +140,19 @@ A second pass measured every function in shipped code with ESLint's `complexity`
 
 Every label, accessible name and piece of text is unchanged; the existing component, axe and end-to-end tests pass without edits (only the `askGemini` call sites in one integration test changed to the new options object).
 
+### 10. Third pass: test structure, documentation and two defects
+
+The second evaluation (97.27) scored Code Quality 89 and Testing 98. Every metric the first two passes measured was already at its target, so this pass looked at what a reviewer reading the code would notice.
+
+| Finding                                                                                                                                                                                               | Fix                                                                                                                                          |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Test files were grab-bags named after the refactor (`refactor-modules.test.ts`, `security-storage.test.ts`, `indoor-mission.test.ts`): a module's tests could not be found from its path.             | 19 files became 49 that mirror the source tree, plus 13 new ones (62 in all). Shared setup moved to `tests/setup.ts` and `tests/fixtures/`.  |
+| 70 of 213 exported functions had no doc comment, including core ones (`searchPlaces`, `createRateLimiter`, `buildContentSecurityPolicy`, `toggleAction`).                                             | All documented; `jsdoc/require-jsdoc` now fails the lint step for any undocumented export.                                                   |
+| `proxy.ts`, which issues the CSP nonce, had no tests and sat outside the coverage scope.                                                                                                              | New `tests/unit/proxy.test.ts`; `proxy.ts` added to coverage (100 %).                                                                        |
+| `fetchAssistantStatus` cast the server's JSON (`as { configured?: unknown }`).                                                                                                                        | Validated with a new `AssistantStatusSchema`; the route's GET response is typed with the same schema.                                        |
+| Nested ternaries and `let` reassignment chains (`useAssistantChat` notice, `prompt.ts` data origin, `DataStatus`).                                                                                    | `ruleModeNotice` and `historyFrom` helpers, an exhaustive `ORIGIN_NOTES` record, and a pure `dataStatus` function.                           |
+| **Defect (found by the new `useCombobox` tests):** pressing ArrowUp before any option was active highlighted the _second_ option, because `(-1 - 1 + 3) % 3 = 1`. ArrowUp also did not open the list. | ArrowUp now opens the list at the last option, as the WAI-ARIA combobox pattern describes; covered by "opens on ArrowUp at the last option". |
+
 ## Security changes (Security 99)
 
 | Change                                                                                                                                                                                                  | Evidence                                                                                                                |
@@ -149,12 +163,9 @@ Every label, accessible name and piece of text is unchanged; the existing compon
 
 ## Testing changes (Testing 99)
 
-- New suites:
-  - `tests/unit/hooks.test.tsx`: storage store, `useStoredState`, `useHydrated`, `useAirQuality`, `useCitySearch`.
-  - `tests/unit/refactor-modules.test.ts`: math, concern levels, checklist, form parsing, origin check, intents, notices, provenance, regressions.
-  - `tests/unit/components/pages.test.tsx`: dashboard, forecast, plan, settings, mission, app shell, data gate.
-  - `tests/unit/components/app-shell-parts.test.tsx`: geolocation granted, denied and unsupported; data status; demo banner; onboarding.
-- Coverage thresholds enforced in CI (`vitest.config.mts`): statements 90, lines 90, functions 85, branches 78.
+- Tests now mirror the source tree (`tests/unit/lib/…`, `tests/unit/hooks/…`, `tests/unit/components/…`), one file per module, so each module's tests are easy to find. Repeated per-file setup (global resets, router mock, demo seeding, JSON responses) moved into `tests/setup.ts` and `tests/fixtures/`.
+- New suites in the third pass: `proxy.ts` (nonce, policy, HTTPS-only upgrade, matcher), `useCombobox`, `useAssistantChat`, `fetchAssistantStatus`, `PreferencesForm`, `QuestionForm`, `AssistantAnswer` (including output rendered as text, never HTML), `Dialog`, `Toast`, `Onboarding` paths, `CommuteResults`, `CadrHelper`, `PageHeader`, `IndiaAqiNotice`, `dataStatus`, and live Indian data on the dashboard.
+- Coverage thresholds enforced in CI (`vitest.config.mts`): statements 95, lines 96, functions 95, branches 84 (were 90 / 90 / 85 / 78). `proxy.ts` is now inside the coverage scope.
 - End-to-end tests run in Chromium and Firefox locally, and in Chromium, Firefox and WebKit in CI. CI runs them inside the official Playwright Docker image: an earlier setup that downloaded browsers and system libraries at run time hung in 2 of 3 runs.
 
 ## User-visible behaviour changes
@@ -171,7 +182,7 @@ None in functionality. Small consistent improvements:
 ```bash
 npm ci
 npm run format:check && npm run lint && npm run lint:unused && npm run lint:duplicates && npm run typecheck
-npm run test:coverage                       # 246 tests + enforced coverage
+npm run test:coverage                       # 305 tests + enforced coverage
 npx playwright install chromium firefox
 npx playwright test --project=desktop-chromium --project=mobile-chromium --project=desktop-firefox --repeat-each=2
 grep -rn "eslint-disable" app components hooks lib types proxy.ts | wc -l          # 0

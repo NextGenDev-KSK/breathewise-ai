@@ -37,6 +37,7 @@ export function sanitizeQuery(query: string): string | null {
   return cleaned.length >= MIN_QUERY_LENGTH ? cleaned : null;
 }
 
+/** Open-Meteo geocoding URL for an already sanitised query. */
 export function buildGeocodingUrl(query: string, count = 8): string {
   const params = new URLSearchParams({ name: query, count: String(count), language: "en", format: "json" });
   return `${GEOCODING_ENDPOINT}?${params.toString()}`;
@@ -65,6 +66,10 @@ export function parseGeocodingResults(raw: unknown): Place[] {
   return places;
 }
 
+/**
+ * Searches for places by name. Returns [] for queries too short to search, and throws a typed
+ * `GeocodingError` (aborted, network or http) so callers can tell cancellation from failure.
+ */
 export async function searchPlaces(
   query: string,
   opts: { signal?: AbortSignal; fetchImpl?: typeof fetch } = {},
@@ -102,6 +107,7 @@ export function placeFromCoordinates(latitude: number, longitude: number): Place
   };
 }
 
+/** Human-readable place name, e.g. "Pune, Maharashtra, India" (no country for a detected location). */
 export function placeLabel(place: Place): string {
   const parts = [place.name, place.admin1, place.source === "geolocation" ? undefined : place.country].filter(
     Boolean,

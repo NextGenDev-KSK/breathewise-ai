@@ -47,6 +47,10 @@ const MAX_RECENT_PLACES = 5;
 /** Refresh "now" every minute so data-age labels and time windows stay current. */
 const CLOCK_INTERVAL_MS = 60_000;
 
+/**
+ * Holds app-wide state (settings, preferences, place, air data, clock) persisted in this browser, and
+ * exposes it through `useApp`.
+ */
 export function AppProvider({ children }: { children: ReactNode }) {
   const ready = useHydrated();
   const [settings, setSettings] = useStoredState(STORAGE_KEYS.settings, SettingsSchema, DEFAULT_SETTINGS);
@@ -129,6 +133,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
+/** App-wide state and actions. Throws if used outside `<AppProvider>`, which is always a wiring bug. */
 export function useApp(): AppContextValue {
   const ctx = useContext(AppContext);
   if (!ctx) throw new Error("useApp must be used inside <AppProvider>");

@@ -15,6 +15,7 @@ const STALE_AFTER_MS = 3 * HOUR_MS;
 /** A change of at least this fraction between now and later counts as a trend. */
 const TREND_THRESHOLD = 0.2;
 
+/** Concern level for the current hour, from the US AQI, European AQI and PM2.5 available. */
 export function currentConcern(s: AirQualitySnapshot): ConcernAssessment | null {
   return assessConcern({
     us_aqi: s.current.usAqi,
@@ -37,10 +38,12 @@ export function dominantPollutant(s: AirQualitySnapshot): DominantPollutant | nu
   return subIndex === null ? null : { key, subIndex, label: POLLUTANTS[key].shortLabel };
 }
 
+/** True for places in India, where the CPCB National AQI notice applies. */
 export function isIndianLocation(s: AirQualitySnapshot): boolean {
   return s.place.countryCode === "IN" || s.timezone === "Asia/Kolkata" || s.timezone === "Asia/Calcutta";
 }
 
+/** True when the current hour's data is older than `STALE_AFTER_MS`. */
 export function isStale(s: AirQualitySnapshot, nowMs: number): boolean {
   return nowMs - s.current.epochMs > STALE_AFTER_MS;
 }
@@ -135,6 +138,7 @@ export function summarizeTrend(s: AirQualitySnapshot, nowMs: number): TrendSumma
   };
 }
 
+/** A metric value for display: PM2.5 in µg/m³ to one decimal, indices as whole numbers. */
 export function describeMetricValue(metric: Metric, value: number): string {
   return metric === "pm2_5"
     ? `PM2.5 ${roundTo(value, 1)} µg/m³`

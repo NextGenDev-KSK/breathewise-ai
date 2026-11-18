@@ -1,6 +1,7 @@
 import {
   AssistantApiErrorSchema,
   AssistantApiSuccessSchema,
+  AssistantStatusSchema,
   type AssistantContext,
   type AssistantErrorCode,
   type AssistantResponse,
@@ -54,11 +55,18 @@ export async function askGemini({
     : { ok: false, code: "unknown", reason: `The assistant returned status ${res.status}.` };
 }
 
-export async function fetchAssistantStatus(signal?: AbortSignal): Promise<boolean> {
+/**
+ * Asks the server whether Gemini is configured. Any network failure or unexpected body counts as
+ * "not configured", so the assistant falls back to rule-based answers instead of failing.
+ */
+export async function fetchAssistantStatus(
+  signal?: AbortSignal,
+  fetchImpl: typeof fetch = fetch,
+): Promise<boolean> {
   try {
-    const res = await fetch("/api/assistant", { signal, cache: "no-store" });
-    const body = (await res.json()) as { configured?: unknown };
-    return body.configured === true;
+    const res = await fetchImpl("/api/assistant", { signal, cache: "no-store" });
+    const status = AssistantStatusSchema.safeParse(await res.json());
+    return status.success && status.data.configured;
   } catch {
     return false;
   }

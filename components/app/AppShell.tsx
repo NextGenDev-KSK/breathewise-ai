@@ -29,6 +29,10 @@ function Attribution({ inverted = false }: { inverted?: boolean }) {
   );
 }
 
+/**
+ * Page frame: skip link, sidebar navigation (a drawer on small screens), data status, onboarding and
+ * the data-source footer.
+ */
 export function AppShell({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
 

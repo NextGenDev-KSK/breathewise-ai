@@ -8,6 +8,7 @@ function hasSubIndex(key: PollutantKey): key is UsSubIndexPollutant {
   return (US_SUBINDEX_POLLUTANTS as readonly string[]).includes(key);
 }
 
+/** Current concentration of each pollutant with its WHO guideline ratio and, where defined, US AQI band. */
 export function PollutantGrid({ snapshot }: { snapshot: AirQualitySnapshot }) {
   const extras = (["dust", "ammonia"] as const).filter((k) => snapshot.current.pollutants[k] !== null);
   const keys: PollutantKey[] = [...PRIMARY_POLLUTANTS, ...extras];

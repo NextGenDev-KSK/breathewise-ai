@@ -13,6 +13,7 @@ const DAY_MS = 24 * HOUR_MS;
 /** Formats a location-local wall-clock string ("2026-11-17T06:00") for display. */
 export type FormatTime = (localTime: string) => string;
 
+/** True for a location-local wall-clock string such as "2026-11-17T06:00". */
 export function isLocalTimeString(value: string): boolean {
   return LOCAL_TIME.test(value);
 }

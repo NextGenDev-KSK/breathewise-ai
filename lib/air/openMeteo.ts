@@ -50,6 +50,10 @@ export class AirQualityError extends Error {
   }
 }
 
+/**
+ * Open-Meteo air-quality URL for a location. The CAMS domain is chosen by region (European model
+ * inside Europe, global model elsewhere) and stated explicitly so the source is always known.
+ */
 export function buildAirQualityUrl(
   place: Pick<Place, "latitude" | "longitude">,
   domain = selectModelForLocation(place.latitude, place.longitude),

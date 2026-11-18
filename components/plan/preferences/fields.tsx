@@ -78,6 +78,7 @@ export interface FieldsetProps {
   update: (patch: Partial<Preferences>) => void;
 }
 
+/** Daily routine, commute, leave and return times, and outdoor activity habit. */
 export function RoutineFields({ id, draft, update }: FieldsetProps) {
   return (
     <fieldset className="grid gap-4 sm:grid-cols-2">
@@ -130,6 +131,7 @@ export function RoutineFields({ id, draft, update }: FieldsetProps) {
   );
 }
 
+/** Optional household circumstances that add caution. Asks about people, never health conditions. */
 export function HouseholdFields({ draft, update }: FieldsetProps) {
   const setHousehold = (patch: Partial<Preferences["household"]>) =>
     update({ household: { ...draft.household, ...patch } });
@@ -162,6 +164,7 @@ export function HouseholdFields({ draft, update }: FieldsetProps) {
   );
 }
 
+/** Air purifier, kitchen exhaust and cooking fuel, used for indoor advice. */
 export function EquipmentFields({ id, draft, update }: FieldsetProps) {
   const setEquipment = (patch: Partial<Preferences["equipment"]>) =>
     update({ equipment: { ...draft.equipment, ...patch } });

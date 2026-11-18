@@ -12,6 +12,7 @@ function Skeleton({ className }: { className?: string }) {
   );
 }
 
+/** Announced loading placeholder (`role="status"`). */
 export function LoadingPanel({ label = "Loading air-quality data…" }: { label?: string }) {
   return (
     <div role="status" aria-live="polite" className="space-y-4">
@@ -26,6 +27,7 @@ export function LoadingPanel({ label = "Loading air-quality data…" }: { label?
   );
 }
 
+/** Shown when there is nothing to display yet, with an optional next step. */
 export function EmptyState({
   icon,
   title,
@@ -54,6 +56,7 @@ export function EmptyState({
   );
 }
 
+/** Shown when data could not be loaded, with the reason and an optional retry. */
 export function ErrorState({
   title = "Couldn't load air-quality data",
   message,

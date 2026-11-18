@@ -12,6 +12,7 @@ const TONES: Record<Tone, string> = {
   navy: "bg-navy-900 text-white border-navy-900",
 };
 
+/** A small pill label in one of the design system's tones. */
 export function Badge({
   tone = "neutral",
   children,

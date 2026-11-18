@@ -26,6 +26,7 @@ const INTENT_PATTERNS: readonly (readonly [Intent, RegExp])[] = [
   ],
 ];
 
+/** Classifies a question by the first matching keyword pattern; `general` when nothing matches. */
 export function detectIntent(message: string): Intent {
   return INTENT_PATTERNS.find(([, pattern]) => pattern.test(message))?.[0] ?? "general";
 }

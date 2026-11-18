@@ -30,6 +30,21 @@ function validateQuestion(question: string): string | null {
   return null;
 }
 
+/** Why the rule engine answers without trying Gemini; no notice while the status check is pending. */
+function ruleModeNotice(aiEnabled: boolean, configured: boolean | null): string | undefined {
+  if (!aiEnabled) return AI_DISABLED_NOTICE;
+  if (configured === false) return FALLBACK_NOTICES.ai_not_configured;
+  return undefined;
+}
+
+/** The most recent turns as alternating user/assistant messages, each trimmed to a safe length. */
+function historyFrom(turns: readonly Turn[]) {
+  return turns.slice(-MAX_HISTORY / 2).flatMap((turn) => [
+    { role: "user" as const, text: turn.question.slice(0, HISTORY_TEXT_LIMIT) },
+    { role: "assistant" as const, text: (turn.answer?.summary ?? "").slice(0, HISTORY_TEXT_LIMIT) },
+  ]);
+}
+
 /**
  * Conversation state for the assistant. Uses Gemini when it is configured, enabled and local data
  * is available; otherwise (or on any AI failure) answers with the rule engine and says why.
@@ -71,11 +86,7 @@ export function useAssistantChat() {
         buildRuleBasedAnswer({ message: question, snapshot, preferences, nowMs, formatTime });
 
       if (!settings.aiEnabled || configured !== true || !snapshot) {
-        const notice = !settings.aiEnabled
-          ? AI_DISABLED_NOTICE
-          : configured === false
-            ? FALLBACK_NOTICES.ai_not_configured
-            : undefined;
+        const notice = ruleModeNotice(settings.aiEnabled, configured);
         setTurns((all) => [
           ...all,
           { id, question, answer: ruleAnswer(), source: { kind: "rules" }, notice },
@@ -85,14 +96,10 @@ export function useAssistantChat() {
 
       setPending(true);
       setTurns((all) => [...all, { id, question, answer: null, source: { kind: "rules" } }]);
-      const history = turns.slice(-MAX_HISTORY / 2).flatMap((turn) => [
-        { role: "user" as const, text: turn.question.slice(0, HISTORY_TEXT_LIMIT) },
-        { role: "assistant" as const, text: (turn.answer?.summary ?? "").slice(0, HISTORY_TEXT_LIMIT) },
-      ]);
       try {
         const result = await askGemini({
           message: question,
-          history,
+          history: historyFrom(turns),
           context: buildAssistantContext(snapshot, preferences, nowMs),
           signal: controller.signal,
         });

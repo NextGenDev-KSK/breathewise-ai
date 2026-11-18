@@ -4,6 +4,7 @@ import { PlanView } from "@/components/plan/PlanView";
 
 export const metadata: Metadata = { title: "My Clean-Air Day" };
 
+/** Route `/plan`: a clean-air day plan built from the forecast and the user's routine. */
 export default function PlanPage() {
   return (
     <>

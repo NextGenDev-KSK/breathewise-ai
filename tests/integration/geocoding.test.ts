@@ -8,7 +8,8 @@ import {
   searchPlaces,
   GeocodingError,
 } from "@/lib/air/geocoding";
-import pune from "../fixtures/geocoding-pune.json";
+import pune from "@/tests/fixtures/geocoding-pune.json";
+import { jsonResponse } from "@/tests/fixtures/http";
 
 describe("sanitizeQuery", () => {
   it("trims, collapses whitespace and strips control characters", () => {
@@ -43,7 +44,7 @@ describe("geocoding", () => {
   });
 
   it("searches via a mocked fetch and skips too-short queries", async () => {
-    const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify(pune), { status: 200 }));
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(pune, 200));
     expect(await searchPlaces("p", { fetchImpl })).toEqual([]);
     expect(fetchImpl).not.toHaveBeenCalled();
     const results = await searchPlaces("Pune", { fetchImpl });

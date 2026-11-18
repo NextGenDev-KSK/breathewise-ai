@@ -78,6 +78,11 @@ export function humanizeTimestamps(response: AssistantResponse, localDate: strin
   };
 }
 
+/**
+ * Lists claims in a model answer that the data cannot support: concentrations or AQI values not in the
+ * context, guarantees or "completely safe" wording, medical claims (cures, diagnoses) and quantified
+ * benefit claims. An empty list means the answer passed the grounding check.
+ */
 export function findUnsupportedClaims(response: AssistantResponse, ctx: AssistantContext): string[] {
   const issues: string[] = [];
   // The disclaimer may legitimately say "no guarantee", so it is excluded from these checks.

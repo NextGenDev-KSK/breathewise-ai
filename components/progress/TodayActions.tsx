@@ -9,6 +9,7 @@ interface TodayActionsProps {
   onToggle: (actionId: MissionActionId) => void;
 }
 
+/** Checklist of today's mission actions; each toggle is saved immediately. */
 export function TodayActions({ dayIndex, done, onToggle }: TodayActionsProps) {
   return (
     <Card>

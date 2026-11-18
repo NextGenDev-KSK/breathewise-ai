@@ -187,6 +187,10 @@ export const ASSISTANT_ERROR_CODES = [
 ] as const;
 export type AssistantErrorCode = (typeof ASSISTANT_ERROR_CODES)[number];
 
+/** GET /api/assistant: whether Gemini is configured on the server (never any configuration value). */
+export const AssistantStatusSchema = z.object({ configured: z.boolean() });
+export type AssistantStatus = z.infer<typeof AssistantStatusSchema>;
+
 export const AssistantApiErrorSchema = z.object({
   error: z.enum(ASSISTANT_ERROR_CODES),
   message: z.string().max(300),

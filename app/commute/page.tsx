@@ -4,6 +4,7 @@ import { CommuteCalculator } from "@/components/commute/CommuteCalculator";
 
 export const metadata: Metadata = { title: "Smart Commute" };
 
+/** Route `/commute`: compares the CO₂e of the user's commute with a lower-emission alternative. */
 export default function CommutePage() {
   return (
     <>

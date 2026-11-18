@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useAssistantChat } from "@/hooks/useAssistantChat";
 
+/** The assistant page: suggested questions, the conversation and the question box. */
 export function AssistantChat() {
   const chat = useAssistantChat();
   return (

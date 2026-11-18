@@ -28,6 +28,7 @@ const PLAN_HORIZON_HOURS = 30;
 /** A period already in progress is planned only if at least this many hours of it remain. */
 const MIN_REMAINING_HOURS = 2;
 
+/** The day period an hour belongs to (night spans 22:00–06:00). */
 export function periodOfHour(hour: number): PeriodId {
   if (hour >= 6 && hour < 12) return "morning";
   if (hour >= 12 && hour < 17) return "afternoon";
@@ -75,6 +76,7 @@ export interface PeriodStats {
   coverage: number;
 }
 
+/** Mean, peak and concern level of a metric over a period's hours; null when there is no data. */
 export function statsFor(hours: readonly HourlyPoint[], metric: Metric | null): PeriodStats | null {
   if (!metric || hours.length === 0) return null;
   const values = metricValues(hours, metric);

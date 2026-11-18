@@ -19,10 +19,10 @@ export default defineConfig({
     restoreMocks: true,
     coverage: {
       provider: "v8",
-      include: ["lib/**", "app/api/**", "components/**", "hooks/**"],
+      include: ["lib/**", "app/api/**", "components/**", "hooks/**", "proxy.ts"],
       reporter: ["text-summary", "text"],
       // Enforced in CI: the build fails if coverage drops below these levels.
-      thresholds: { statements: 90, lines: 90, functions: 85, branches: 78 },
+      thresholds: { statements: 95, lines: 96, functions: 95, branches: 84 },
     },
   },
 });

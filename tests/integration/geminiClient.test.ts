@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { GOOD_RESPONSE, delhiContext } from "../fixtures/ai";
+import { GOOD_RESPONSE, delhiContext } from "@/tests/fixtures/ai";
+import { jsonResponse } from "@/tests/fixtures/http";
 
 const generateContent = vi.fn();
 class ApiError extends Error {
@@ -78,8 +79,7 @@ describe("generateAssistantJson (Gemini SDK mocked)", () => {
 });
 
 describe("askGemini (browser client)", () => {
-  const ok = (body: unknown, status = 200) =>
-    vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status }));
+  const ok = (body: unknown, status = 200) => vi.fn().mockResolvedValue(jsonResponse(body, status));
 
   it("returns validated responses", async () => {
     const r = await askGemini({

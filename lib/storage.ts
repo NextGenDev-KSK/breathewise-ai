@@ -82,6 +82,10 @@ export function storedSnapshotReader<T>(key: StorageKey, schema: z.ZodType<T>, f
   };
 }
 
+/**
+ * Saves a JSON value under the app's versioned key and notifies subscribers. Returns false when
+ * storage is unavailable or full, so callers can degrade gracefully.
+ */
 export function writeStored(key: StorageKey, value: unknown): boolean {
   const s = storage();
   if (!s) return false;

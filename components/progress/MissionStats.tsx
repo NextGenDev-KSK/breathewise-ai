@@ -14,6 +14,7 @@ function StatCard({ label, children }: { label: ReactNode; children: ReactNode }
   );
 }
 
+/** Mission totals: current day, actions completed and the active-day streak. */
 export function MissionStats({ progress, dayIndex }: { progress: MissionProgress; dayIndex: number | null }) {
   return (
     <div className="grid gap-4 sm:grid-cols-3">

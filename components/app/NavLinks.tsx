@@ -5,6 +5,10 @@ import { usePathname } from "next/navigation";
 import { NAV_ITEMS } from "@/components/app/nav";
 import { cn } from "@/components/ui/cn";
 
+/**
+ * Primary navigation; marks the current route with `aria-current` and calls `onNavigate` after a
+ * click (used to close the mobile drawer).
+ */
 export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   return (

@@ -32,6 +32,7 @@ function Indoor({ snapshot }: { snapshot: AirQualitySnapshot }) {
   );
 }
 
+/** The indoor page for the selected location, shown once air data is available. */
 export function IndoorView() {
   return <AirDataGate>{(snapshot) => <Indoor snapshot={snapshot} />}</AirDataGate>;
 }

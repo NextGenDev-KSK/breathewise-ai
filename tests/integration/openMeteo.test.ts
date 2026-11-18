@@ -7,11 +7,8 @@ import {
   normalizeAirQuality,
 } from "@/lib/air/openMeteo";
 import { selectModelForLocation } from "@/lib/air/models";
-import { BERLIN, DELHI, DELHI_NOW, delhiRaw } from "../fixtures/builders";
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
-}
+import { BERLIN, DELHI, DELHI_NOW, delhiRaw } from "@/tests/fixtures/builders";
+import { jsonResponse } from "@/tests/fixtures/http";
 
 describe("buildAirQualityUrl", () => {
   it("requests only the needed variables with automatic timezone and an explicit domain", () => {

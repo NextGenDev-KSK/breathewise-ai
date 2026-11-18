@@ -15,6 +15,10 @@ export interface RateLimitResult {
   retryAfterSeconds: number;
 }
 
+/**
+ * Creates a sliding-window limiter: `check(key)` allows up to `limit` hits per `windowMs` and otherwise
+ * says how long to wait. Memory is bounded by evicting the oldest keys beyond `maxKeys`.
+ */
 export function createRateLimiter({ limit, windowMs, maxKeys = 5_000 }: RateLimiterOptions) {
   const hits = new Map<string, number[]>();
 

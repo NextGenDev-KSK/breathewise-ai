@@ -58,6 +58,7 @@ export function todayIso(now: Date = new Date()): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
+/** A fresh 7-day mission starting on the given local date. */
 export function newMission(today: string): MissionState {
   return { startedOn: today, completions: {} };
 }
@@ -73,6 +74,10 @@ export function missionDayIndex(state: MissionState, today: string): number | nu
   return d >= 0 && d < MISSION_DAYS ? d : null;
 }
 
+/**
+ * Marks an action done or not done on a mission day. Returns the state unchanged for days outside
+ * the mission, and keeps completions in the catalogue's order.
+ */
 export function toggleAction(state: MissionState, dayIndex: number, actionId: MissionActionId): MissionState {
   if (dayIndex < 0 || dayIndex >= MISSION_DAYS) return state;
   const key = String(dayIndex);
@@ -98,6 +103,7 @@ export interface MissionProgress {
   perAction: Record<MissionActionId, number>;
 }
 
+/** Per-day and per-action totals, completion percentage, active days and current streak. */
 export function missionProgress(state: MissionState, today: string): MissionProgress {
   const start = Date.parse(`${state.startedOn}T00:00:00Z`);
   const perDay = Array.from({ length: MISSION_DAYS }, (_, i) => ({

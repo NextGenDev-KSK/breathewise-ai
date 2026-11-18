@@ -67,6 +67,7 @@ export const DEFAULT_SETTINGS: Settings = {
   onboarded: false,
 };
 
+/** True when the household includes children, older adults or someone sensitive to air pollution. */
 export function hasSensitiveMember(household: Household): boolean {
   return household.children || household.olderAdults || household.respiratorySensitivity;
 }

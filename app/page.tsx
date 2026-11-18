@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/ui/PageHeader";
 import { DashboardView } from "@/components/dashboard/DashboardView";
 
+/** Route `/`: the air-quality dashboard. */
 export default function HomePage() {
   return (
     <>

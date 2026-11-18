@@ -4,6 +4,7 @@ import type { Rule } from "@/lib/engine/recommendations/types";
 
 /** Rules about the home: ventilation, filtration, cooking smoke and dust. */
 
+/** When to air the home, based on the current hour versus the coming hours. */
 export const ventilation: Rule = ({ snapshot, nowMs, fmt, source, confidence }) => {
   const advice = getVentilationAdvice(snapshot, nowMs, fmt);
   if (advice.status === "unknown") return null;
@@ -29,6 +30,7 @@ export const ventilation: Rule = ({ snapshot, nowMs, fmt, source, confidence }) 
   };
 };
 
+/** From "Elevated" concern upward: run the purifier, or set up one cleaner room without one. */
 export const purification: Rule = ({ preferences, concern, source }) => {
   if (!concern || concern.level < 2) return null;
   const hasPurifier = preferences.equipment.airPurifier;
@@ -54,6 +56,7 @@ export const purification: Rule = ({ preferences, concern, source }) => {
   };
 };
 
+/** Ventilate while cooking, with stronger advice for solid fuels. */
 export const cooking: Rule = ({ preferences, concern }) => {
   const biomass = preferences.cookingFuel === "biomass";
   if ((!concern || concern.level < 1) && !biomass) return null;
@@ -86,6 +89,7 @@ export const cooking: Rule = ({ preferences, concern }) => {
 const PM10_SUBINDEX_THRESHOLD = 100;
 const DUST_THRESHOLD = 50;
 
+/** Reduce indoor dust when coarse particles (PM10) or desert dust are elevated. */
 export const dust: Rule = ({ snapshot, source, confidence }) => {
   const subIndex = snapshot.current.usSubIndices.pm10;
   const dustValue = snapshot.current.pollutants.dust;

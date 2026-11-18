@@ -1,5 +1,6 @@
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import jsdoc from "eslint-plugin-jsdoc";
 
 const config = [
   ...nextVitals,
@@ -43,6 +44,20 @@ const config = [
       "max-params": ["error", 4],
       "max-lines-per-function": ["error", { max: 80, skipBlankLines: true, skipComments: true }],
       "max-lines": ["error", { max: 300, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  {
+    // Every exported function (components, hooks, engine and API handlers) explains its purpose.
+    files: ["app/**", "components/**", "hooks/**", "lib/**", "types/**", "proxy.ts"],
+    plugins: { jsdoc },
+    rules: {
+      "jsdoc/require-jsdoc": [
+        "error",
+        {
+          publicOnly: true,
+          require: { FunctionDeclaration: true, ArrowFunctionExpression: true, FunctionExpression: true },
+        },
+      ],
     },
   },
   {

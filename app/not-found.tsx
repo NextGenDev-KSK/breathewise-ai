@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+/** 404 page with a way back to the dashboard. */
 export default function NotFound() {
   return (
     <div className="mx-auto max-w-md py-16 text-center">

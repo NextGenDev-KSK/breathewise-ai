@@ -8,6 +8,7 @@ import {
   type AssistantErrorCode,
   type AssistantRequest,
   type AssistantResponse,
+  type AssistantStatus,
 } from "@/lib/ai/schema";
 import { findUnsupportedClaims, humanizeTimestamps } from "@/lib/ai/guard";
 import { GeminiError, generateAssistantJson, readGeminiConfig, type GeminiConfig } from "@/lib/ai/gemini";
@@ -144,9 +145,15 @@ function validateOutput(text: string, request: AssistantRequest): Step<Assistant
 
 /** Reports whether AI is configured, without exposing any configuration value. */
 export async function GET() {
-  return NextResponse.json({ configured: readGeminiConfig() !== null }, { headers: NO_STORE });
+  const body: AssistantStatus = { configured: readGeminiConfig() !== null };
+  return NextResponse.json(body, { headers: NO_STORE });
 }
 
+/**
+ * Answers one assistant question with Gemini. Each step either passes its value on or ends the request
+ * with a typed error: gate (origin, content type, rate limit) → parse → configuration → model → output
+ * validation. Failures carry a stable error code so the client can fall back to rule-based answers.
+ */
 export async function POST(req: NextRequest) {
   const gate = checkGate(req);
   if (gate) return failureResponse(gate);

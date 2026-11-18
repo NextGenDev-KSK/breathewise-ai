@@ -15,6 +15,7 @@ import {
   type CommuteResult,
 } from "@/lib/engine/emissions";
 
+/** Commute emissions calculator: validates the form, then shows weekly and monthly CO₂e for both modes. */
 export function CommuteCalculator() {
   const { preferences } = useApp();
   const current: CommuteMode = preferences.commuteMode === "none" ? "car" : preferences.commuteMode;

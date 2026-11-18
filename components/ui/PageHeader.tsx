@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+/** The page's single `h1`, with an optional description and actions. */
 export function PageHeader({
   title,
   description,

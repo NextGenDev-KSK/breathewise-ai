@@ -95,6 +95,7 @@ function Dashboard({ snapshot }: { snapshot: AirQualitySnapshot }) {
   );
 }
 
+/** The dashboard for the selected location, shown once air data is available. */
 export function DashboardView() {
   return <AirDataGate>{(snapshot) => <Dashboard snapshot={snapshot} />}</AirDataGate>;
 }

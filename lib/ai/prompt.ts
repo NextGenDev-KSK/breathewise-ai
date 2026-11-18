@@ -35,12 +35,19 @@ export function buildUserPrompt(req: AssistantRequest): string {
     .join("\n");
 }
 
+/** How the model should treat each data origin; the compiler requires an entry for every origin. */
+const ORIGIN_NOTES: Record<AssistantContext["dataOrigin"], string> = {
+  live: "latest model data",
+  cache: "saved earlier copy; may be out of date",
+  demo: "SAMPLE demo data, not real conditions",
+};
+
 function contextForPrompt(ctx: AssistantContext) {
   return {
     ...ctx,
     localDate: ctx.observedAt.slice(0, 10),
     data_notes: [
-      `Data origin: ${ctx.dataOrigin === "demo" ? "SAMPLE demo data, not real conditions" : ctx.dataOrigin === "cache" ? "saved earlier copy; may be out of date" : "latest model data"}.`,
+      `Data origin: ${ORIGIN_NOTES[ctx.dataOrigin]}.`,
       `Model: ${ctx.model.name}, ${ctx.model.spatialResolution}, ${ctx.model.temporalResolution}.`,
       "All pollutant units are µg/m³. Times are local to the location.",
     ],

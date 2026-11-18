@@ -18,6 +18,7 @@ interface CommuteFormProps {
   fieldId: (field: CommuteField) => string;
 }
 
+/** Controlled commute inputs (distance, trips, days and both modes) with per-field error messages. */
 export function CommuteForm({ values, errors, onChange, onSubmit, fieldId }: CommuteFormProps) {
   const set = <K extends keyof CommuteFormValues>(key: K, value: CommuteFormValues[K]) =>
     onChange({ ...values, [key]: value });

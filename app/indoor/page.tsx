@@ -4,6 +4,7 @@ import { IndoorView } from "@/components/indoor/IndoorView";
 
 export const metadata: Metadata = { title: "Indoor Air Advisor" };
 
+/** Route `/indoor`: ventilation advice, a daily indoor checklist and a purifier size helper. */
 export default function IndoorPage() {
   return (
     <>

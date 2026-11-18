@@ -95,18 +95,22 @@ function bandIn(scale: BandScale, value: number | null): IndexBand | null {
   return scale.bounded.find((band) => value <= band.max) ?? scale.top;
 }
 
+/** US EPA AQI band for a value, or null when the value is missing or invalid. */
 export function usAqiBand(value: number | null): IndexBand | null {
   return bandIn(US_AQI_SCALE, value);
 }
 
+/** European (EEA) AQI band for a value, or null when the value is missing or invalid. */
 export function euAqiBand(value: number | null): IndexBand | null {
   return bandIn(EU_AQI_SCALE, value);
 }
 
+/** PM2.5 concentration band (US EPA 2024 breakpoints), or null when missing or invalid. */
 export function pm25Band(value: number | null): IndexBand | null {
   return bandIn(PM25_SCALE, value);
 }
 
+/** Band on the user's chosen index scale. */
 export function indexBand(standard: IndexStandard, value: number | null): IndexBand | null {
   return standard === "us" ? usAqiBand(value) : euAqiBand(value);
 }

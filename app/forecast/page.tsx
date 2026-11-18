@@ -4,6 +4,7 @@ import { ForecastView } from "@/components/forecast/ForecastView";
 
 export const metadata: Metadata = { title: "Forecast & best outdoor time" };
 
+/** Route `/forecast`: hourly and daily forecasts plus the outdoor-window planner. */
 export default function ForecastPage() {
   return (
     <>

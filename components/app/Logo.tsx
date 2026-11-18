@@ -20,6 +20,7 @@ function LogoMark({ className = "size-8" }: { className?: string }) {
   );
 }
 
+/** The BreatheWise mark and wordmark; `inverted` for dark backgrounds. */
 export function Logo({ inverted = false }: { inverted?: boolean }) {
   return (
     <span className="flex items-center gap-2.5">

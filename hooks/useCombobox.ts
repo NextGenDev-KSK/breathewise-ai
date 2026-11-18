@@ -14,7 +14,8 @@ interface ComboboxOptions<T> {
 
 /**
  * Open state, active option and keyboard handling for the WAI-ARIA 1.2 combobox pattern:
- * arrow keys move (wrapping), Enter chooses, Escape closes and then clears.
+ * arrow keys open the list and move (Down from nothing → first, Up → last, both wrap), Enter chooses,
+ * Escape closes and then clears.
  */
 export function useCombobox<T>({ options, onChoose, onClear, containerRef }: ComboboxOptions<T>) {
   const [open, setOpen] = useState(false);
@@ -29,8 +30,13 @@ export function useCombobox<T>({ options, onChoose, onClear, containerRef }: Com
     return () => document.removeEventListener("pointerdown", closeOnOutsidePointer);
   }, [containerRef]);
 
+  // From "nothing active", Down goes to the first option and Up to the last; otherwise both wrap.
   const move = (step: 1 | -1) =>
-    setActive((index) => (options.length ? (index + step + options.length) % options.length : -1));
+    setActive((index) => {
+      if (!options.length) return -1;
+      if (index < 0) return step === 1 ? 0 : options.length - 1;
+      return (index + step + options.length) % options.length;
+    });
 
   const handlers: Record<string, (e: KeyboardEvent<HTMLInputElement>) => void> = {
     ArrowDown: (e) => {
@@ -40,6 +46,7 @@ export function useCombobox<T>({ options, onChoose, onClear, containerRef }: Com
     },
     ArrowUp: (e) => {
       e.preventDefault();
+      setOpen(true);
       move(-1);
     },
     Enter: (e) => {

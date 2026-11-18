@@ -11,6 +11,7 @@ const STATUS = {
   unknown: { tone: "neutral", label: "No data" },
 } as const;
 
+/** Whether to open windows now, why, and when a cleaner hour is expected. */
 export function VentilationCard({ advice }: { advice: VentilationAdvice }) {
   const status = STATUS[advice.status];
   return (

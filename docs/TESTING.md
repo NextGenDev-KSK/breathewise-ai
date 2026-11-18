@@ -8,6 +8,7 @@ All results below were produced on 2026-11-18 on Linux with Node 22.23.2 and Chr
 npm run format:check  # Prettier
 npm run lint          # ESLint with type-aware rules, --max-warnings=0
 npm run lint:unused   # Knip: unused files, exports, dependencies
+npm run lint:duplicates # jscpd: copy-pasted code (threshold 0)
 npm run typecheck     # tsc --noEmit (strict)
 npm run test          # Vitest: unit + integration + hook + component
 npm run test:coverage # with v8 coverage and enforced thresholds
@@ -17,18 +18,27 @@ npm run test:e2e      # builds, starts `next start` on :3200, runs Playwright
 
 ## Results (latest run)
 
-| Suite                                                  | Result                                                                                                                                                                  |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Prettier, ESLint (type-aware), Knip, TypeScript        | all clean; 0 lint suppressions in source                                                                                                                                |
-| Vitest                                                 | **19 files, 246 tests passed**                                                                                                                                          |
-| Coverage (all source)                                  | 92.9 % statements · 81.4 % branches · 90.3 % functions · 94.7 % lines (thresholds 90 / 78 / 85 / 90, enforced)                                                          |
-| Coverage (`lib/engine`, `lib/engine/plan`)             | 98.4 % / 96.4 % statements · 99.0 % / 97.5 % lines                                                                                                                      |
-| Playwright, Chromium desktop + mobile                  | **35 passed** (the mobile-only test is skipped on the desktop project)                                                                                                  |
-| Playwright, Firefox                                    | **16 passed** (all functional flows)                                                                                                                                    |
-| Playwright `--repeat-each=2`, all three local projects | **102 passed**, 0 flaky                                                                                                                                                 |
-| Playwright, WebKit                                     | **16 passed** in CI, inside the official Playwright Docker image (`mcr.microsoft.com/playwright:v1.65.1-noble`); the full CI run is 67 passed across all three browsers |
-| axe-core (WCAG 2.0/2.1/2.2 A and AA tags)              | 0 violations on all 8 pages at desktop and Pixel 7 sizes, plus the onboarding dialog                                                                                    |
-| `next build`                                           | success; every route dynamic (required for the CSP nonce)                                                                                                               |
+| Suite                                                                                             | Result                                                                                                                                                                  |
+| ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Prettier, ESLint (type-aware, complexity budgets, required doc comments), Knip, jscpd, TypeScript | all clean; 0 lint suppressions; 0 duplicated blocks                                                                                                                     |
+| Vitest                                                                                            | **62 files, 305 tests passed**                                                                                                                                          |
+| Coverage (all source, including `proxy.ts`)                                                       | 97.1 % statements · 85.8 % branches · 97.2 % functions · 98.2 % lines (thresholds 95 / 84 / 95 / 96, enforced)                                                          |
+| Coverage (`lib/engine`, `lib/engine/plan`)                                                        | 96.3 % / 97.5 % statements · 98.7 % / 98.6 % lines                                                                                                                      |
+| Playwright, Chromium desktop + mobile                                                             | **35 passed** (the mobile-only test is skipped on the desktop project)                                                                                                  |
+| Playwright, Firefox                                                                               | **16 passed** (all functional flows)                                                                                                                                    |
+| Playwright `--repeat-each=2`, all three local projects                                            | **102 passed**, 0 flaky                                                                                                                                                 |
+| Playwright, WebKit                                                                                | **16 passed** in CI, inside the official Playwright Docker image (`mcr.microsoft.com/playwright:v1.65.1-noble`); the full CI run is 67 passed across all three browsers |
+| axe-core (WCAG 2.0/2.1/2.2 A and AA tags)                                                         | 0 violations on all 8 pages at desktop and Pixel 7 sizes, plus the onboarding dialog                                                                                    |
+| `next build`                                                                                      | success; every route dynamic (required for the CSP nonce)                                                                                                               |
+
+## Test layout
+
+Unit tests mirror the source tree, so the tests for `lib/engine/windows.ts` are in `tests/unit/lib/engine/windows.test.ts`, and the tests for `components/plan/PreferencesForm.tsx` are in `tests/unit/components/plan/PreferencesForm.test.tsx`. Integration tests (`tests/integration`) exercise a module together with the real captured API responses it parses.
+
+Shared setup lives in one place:
+
+- `tests/setup.ts` resets everything after each test: rendered tree, localStorage, response cache, stubbed globals, geolocation mock, and the router stub.
+- `tests/fixtures/` holds the captured API responses, snapshot builders, `renderWithApp` / `AppProviders`, `seedDemoMode`, `jsonResponse` and the shared `router` stub.
 
 ## What is tested
 
@@ -43,6 +53,8 @@ npm run test:e2e      # builds, starts `next start` on :3200, runs Playwright
 - **Indoor and mission:** ventilation statuses and better time, checklist personalisation, no plant or ionizer advice, CADR rule, mission days, toggles, streak, totals.
 - **AI:** context privacy (no coordinates), request validation, prompt separation, grounding guard (invented numbers, guarantees, quantified benefits, negated caveats allowed), fallback intent detection for all 7 sample questions, with every answer schema-valid and guard-clean.
 - **Security and storage:** rate limiter, client key, CSP, storage validation and clearing, demo fixture labelling, Gemini config sanitising.
+- **Proxy (`proxy.ts`):** a fresh nonce per request, the same nonce and policy forwarded to the renderer, a strict policy, `upgrade-insecure-requests` only over HTTPS (including behind a TLS proxy), and a matcher that skips API routes, static assets and prefetches.
+- **Hooks:** `useCombobox` (open on either arrow, Down → first and Up → last, wrapping, Enter only while open, Escape closes then clears, outside-pointer close, shrinking lists), `useAssistantChat` (Gemini answers with history, fallback with the server's reason, AI turned off, no key, input validation, superseded questions dropped, clearing), `useStoredState`, `useHydrated`, `useAirQuality`, `useCitySearch`.
 
 ### Integration (`tests/integration`)
 
@@ -54,7 +66,7 @@ npm run test:e2e      # builds, starts `next start` on :3200, runs Playwright
 
 ### Component (React Testing Library)
 
-Commute calculator (worked example, accessible errors, focus management), chart (text summary as accessible name, data table toggle), city combobox (debounce, keyboard selection, persistence, no-results announcement), assistant fallback mode and input validation, indoor checklist persistence, safe rendering of hostile text.
+Commute calculator (worked example, accessible errors, focus management) and results (saving, increase, zero-emission modes), chart (text summary as accessible name, data table toggle), city combobox (debounce, keyboard and mouse selection, persistence, no-results and unavailable announcements), preferences form (every field submitted, invalid time blocked and announced), question box (Enter, Shift+Enter, limits, pending), assistant answer (engine label, sections, model output rendered as text, never HTML), dialog (Close, Escape via `cancel`, backdrop, focus return), onboarding (search, location, demo, dismiss), toasts (live regions, auto-dismiss, limit), data status, CPCB notice for live Indian data, indoor checklist persistence, purifier helper.
 
 ### End-to-end (Playwright, production build)
 

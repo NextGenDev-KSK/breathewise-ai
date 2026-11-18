@@ -28,6 +28,10 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+/**
+ * Root layout for every route: fonts, app providers and the navigation shell. Rendered per request so
+ * the proxy's CSP nonce reaches Next.js scripts.
+ */
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Reading request headers opts pages into dynamic rendering, which the per-request CSP nonce requires.
   await headers();
