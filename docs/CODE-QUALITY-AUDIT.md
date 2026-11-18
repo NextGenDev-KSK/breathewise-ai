@@ -111,10 +111,11 @@ This audit started from the first competition evaluation (96.83/100): **Code Qua
 
 ### 8. Defects found during the audit
 
-| Defect                                                                                                                                                                                 | Status                                                                                                |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| **Latent:** an outdoor window's end time used string arithmetic, so 23:00 + 1 h became "00:00" on the same date. No activity currently runs past 22:00, so users could not trigger it. | End times now come from absolute time. Covered by "window end times are computed from absolute time". |
-| The "Use my location" button held two copies of its label and relied on CSS to hide one. Without CSS (or with CSS overridden) its accessible name was doubled.                         | It now has a single label that is visually hidden only on small screens.                              |
+| Defect                                                                                                                                                                                                                                                                                                   | Status                                                                                                                                                     |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Latent:** an outdoor window's end time used string arithmetic, so 23:00 + 1 h became "00:00" on the same date. No activity currently runs past 22:00, so users could not trigger it.                                                                                                                   | End times now come from absolute time. Covered by "window end times are computed from absolute time".                                                      |
+| The "Use my location" button held two copies of its label and relied on CSS to hide one. Without CSS (or with CSS overridden) its accessible name was doubled.                                                                                                                                           | It now has a single label that is visually hidden only on small screens.                                                                                   |
+| **Found by the new WebKit runs:** the CSP always sent `upgrade-insecure-requests`. WebKit (Safari) applies it even to `http://localhost`, rewriting the page's own scripts to `https://` so they never loaded. This broke local HTTP testing in Safari; production is HTTPS, so users were not affected. | The directive is now sent only when the request arrived over HTTPS (`proxy.ts`). Covered by "upgrades insecure requests only for pages served over HTTPS". |
 
 ## Security changes (Security 99)
 
@@ -132,7 +133,7 @@ This audit started from the first competition evaluation (96.83/100): **Code Qua
   - `tests/unit/components/pages.test.tsx`: dashboard, forecast, plan, settings, mission, app shell, data gate.
   - `tests/unit/components/app-shell-parts.test.tsx`: geolocation granted, denied and unsupported; data status; demo banner; onboarding.
 - Coverage thresholds enforced in CI (`vitest.config.mts`): statements 90, lines 90, functions 85, branches 78.
-- End-to-end tests run in Firefox locally and CI, and in WebKit in CI (Playwright installs its system libraries there).
+- End-to-end tests run in Chromium and Firefox locally, and in Chromium, Firefox and WebKit in CI. CI runs them inside the official Playwright Docker image: an earlier setup that downloaded browsers and system libraries at run time hung in 2 of 3 runs.
 
 ## User-visible behaviour changes
 

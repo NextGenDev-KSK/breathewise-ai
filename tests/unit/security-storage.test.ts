@@ -34,7 +34,7 @@ describe("rate limiter", () => {
 
 describe("content security policy", () => {
   it("is strict in production", () => {
-    const csp = buildContentSecurityPolicy("abc", false);
+    const csp = buildContentSecurityPolicy("abc", { isDev: false, secure: true });
     expect(csp).toContain("script-src 'self' 'nonce-abc' 'strict-dynamic'");
     expect(csp).not.toContain("unsafe-eval");
     expect(csp).toContain("frame-ancestors 'none'");
@@ -44,7 +44,15 @@ describe("content security policy", () => {
     );
   });
   it("only relaxes eval in development", () => {
-    expect(buildContentSecurityPolicy("abc", true)).toContain("'unsafe-eval'");
+    expect(buildContentSecurityPolicy("abc", { isDev: true, secure: false })).toContain("'unsafe-eval'");
+  });
+  it("upgrades insecure requests only for pages served over HTTPS", () => {
+    expect(buildContentSecurityPolicy("abc", { isDev: false, secure: true })).toContain(
+      "upgrade-insecure-requests",
+    );
+    expect(buildContentSecurityPolicy("abc", { isDev: false, secure: false })).not.toContain(
+      "upgrade-insecure-requests",
+    );
   });
 });
 

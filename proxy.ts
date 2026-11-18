@@ -7,7 +7,9 @@ import { buildContentSecurityPolicy } from "@/lib/security/csp";
  */
 export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
-  const csp = buildContentSecurityPolicy(nonce, process.env.NODE_ENV === "development");
+  const secure =
+    request.nextUrl.protocol === "https:" || request.headers.get("x-forwarded-proto") === "https";
+  const csp = buildContentSecurityPolicy(nonce, { isDev: process.env.NODE_ENV === "development", secure });
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);

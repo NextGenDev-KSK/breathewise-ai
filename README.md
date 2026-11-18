@@ -224,7 +224,7 @@ Targets WCAG 2.2 AA:
 | `npm run test:e2e`      | Playwright on a production build, all APIs mocked, axe audits                | Chromium desktop + mobile and Firefox: 51 passed; 102/102 repeated |
 | `npm run build`         | Production build                                                             | pass                                                               |
 
-External services are never called by the tests: Open-Meteo fixtures are real captured responses, and Gemini is mocked at the SDK and HTTP levels. WebKit (Safari engine) runs in CI, where Playwright installs its system libraries. See [docs/TESTING.md](docs/TESTING.md).
+External services are never called by the tests: Open-Meteo fixtures are real captured responses, and Gemini is mocked at the SDK and HTTP levels. WebKit (Safari engine) runs in CI, inside the official Playwright Docker image. See [docs/TESTING.md](docs/TESTING.md).
 
 ## 14. Local installation
 

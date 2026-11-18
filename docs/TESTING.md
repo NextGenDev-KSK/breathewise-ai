@@ -26,7 +26,7 @@ npm run test:e2e      # builds, starts `next start` on :3200, runs Playwright
 | Playwright, Chromium desktop + mobile                  | **35 passed** (the mobile-only test is skipped on the desktop project)                                         |
 | Playwright, Firefox                                    | **16 passed** (all functional flows)                                                                           |
 | Playwright `--repeat-each=2`, all three local projects | **102 passed**, 0 flaky                                                                                        |
-| Playwright, WebKit                                     | runs in CI, where Playwright installs WebKit's system libraries                                                |
+| Playwright, WebKit                                     | runs in CI, inside the official Playwright Docker image (`mcr.microsoft.com/playwright:v1.65.1-noble`)         |
 | axe-core (WCAG 2.0/2.1/2.2 A and AA tags)              | 0 violations on all 8 pages at desktop and Pixel 7 sizes, plus the onboarding dialog                           |
 | `next build`                                           | success; every route dynamic (required for the CSP nonce)                                                      |
 

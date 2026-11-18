@@ -4,7 +4,13 @@ const OPEN_METEO_ORIGINS = [
   "https://geocoding-api.open-meteo.com",
 ] as const;
 
-export function buildContentSecurityPolicy(nonce: string, isDev: boolean): string {
+interface CspOptions {
+  isDev: boolean;
+  /** True when the page was requested over HTTPS (directly or behind a TLS-terminating proxy). */
+  secure: boolean;
+}
+
+export function buildContentSecurityPolicy(nonce: string, { isDev, secure }: CspOptions): string {
   const directives = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
@@ -20,6 +26,8 @@ export function buildContentSecurityPolicy(nonce: string, isDev: boolean): strin
     "worker-src 'self'",
     "manifest-src 'self'",
   ];
-  if (!isDev) directives.push("upgrade-insecure-requests");
+  // Only meaningful over HTTPS. WebKit (Safari) also applies it to http://localhost, where it would
+  // rewrite the page's own scripts to https:// and stop them loading.
+  if (secure) directives.push("upgrade-insecure-requests");
   return directives.join("; ");
 }
