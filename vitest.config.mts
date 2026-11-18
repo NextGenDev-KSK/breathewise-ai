@@ -21,6 +21,8 @@ export default defineConfig({
       provider: "v8",
       include: ["lib/**", "app/api/**", "components/**", "hooks/**"],
       reporter: ["text-summary", "text"],
+      // Enforced in CI: the build fails if coverage drops below these levels.
+      thresholds: { statements: 90, lines: 90, functions: 85, branches: 78 },
     },
   },
 });

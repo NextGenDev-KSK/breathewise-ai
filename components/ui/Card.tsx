@@ -2,7 +2,12 @@ import type { HTMLAttributes, ReactNode } from "react";
 import { cn } from "@/components/ui/cn";
 
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("rounded-2xl border border-line bg-surface shadow-[var(--shadow-card)]", className)} {...props} />;
+  return (
+    <div
+      className={cn("border-line bg-surface rounded-2xl border shadow-[var(--shadow-card)]", className)}
+      {...props}
+    />
+  );
 }
 
 export function CardHeader({
@@ -21,14 +26,21 @@ export function CardHeader({
   id?: string;
 }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-5 py-4">
+    <div className="border-line flex flex-wrap items-start justify-between gap-3 border-b px-5 py-4">
       <div className="flex min-w-0 items-start gap-3">
-        {icon ? <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700" aria-hidden="true">{icon}</span> : null}
+        {icon ? (
+          <span
+            className="bg-brand-50 text-brand-700 mt-0.5 grid size-9 shrink-0 place-items-center rounded-lg"
+            aria-hidden="true"
+          >
+            {icon}
+          </span>
+        ) : null}
         <div className="min-w-0">
-          <Heading id={id} className="text-base font-semibold text-ink">
+          <Heading id={id} className="text-ink text-base font-semibold">
             {title}
           </Heading>
-          {description ? <p className="mt-0.5 text-sm text-ink-3">{description}</p> : null}
+          {description ? <p className="text-ink-3 mt-0.5 text-sm">{description}</p> : null}
         </div>
       </div>
       {action}

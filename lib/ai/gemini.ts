@@ -12,14 +12,20 @@ import type { AssistantRequest } from "@/lib/ai/schema";
 export const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite";
 
 /** Flash-Lite models accept "minimal" thinking; other Gemini 3 Flash models reject it, so they use "low". */
-export function thinkingLevelFor(model: string): ThinkingLevel {
+function thinkingLevelFor(model: string): ThinkingLevel {
   return model.includes("flash-lite") ? ThinkingLevel.MINIMAL : ThinkingLevel.LOW;
 }
 /** Overall budget for one answer, including SDK retries. The route allows 60 s. */
-export const GEMINI_TIMEOUT_MS = 30_000;
+const GEMINI_TIMEOUT_MS = 30_000;
 
 /** Bounded retries for quota (429) and transient server errors, with short backoff. */
-export const GEMINI_RETRY = { attempts: 3, initialDelay: 1, maxDelay: 4, expBase: 2, httpStatusCodes: [429, 500, 502, 503, 504] };
+const GEMINI_RETRY = {
+  attempts: 3,
+  initialDelay: 1,
+  maxDelay: 4,
+  expBase: 2,
+  httpStatusCodes: [429, 500, 502, 503, 504],
+};
 
 export interface GeminiConfig {
   apiKey: string;
@@ -77,7 +83,8 @@ export async function generateAssistantJson(
   } catch (err) {
     if (err instanceof GeminiError) throw err;
     if (controller.signal.aborted) throw new GeminiError("timeout");
-    if (err instanceof ApiError) throw new GeminiError(err.status === 429 ? "rate-limited" : "unavailable", err.status);
+    if (err instanceof ApiError)
+      throw new GeminiError(err.status === 429 ? "rate-limited" : "unavailable", err.status);
     throw new GeminiError("unavailable");
   } finally {
     clearTimeout(timer);

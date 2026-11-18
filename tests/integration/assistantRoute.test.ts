@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { delhiContext, GOOD_RESPONSE } from "../fixtures/ai";
+import type * as GeminiModule from "@/lib/ai/gemini";
 
 const generate = vi.fn<(...args: unknown[]) => Promise<string>>();
 
 vi.mock("@/lib/ai/gemini", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/ai/gemini")>();
+  const actual = await importOriginal<typeof GeminiModule>();
   return { ...actual, generateAssistantJson: (...args: unknown[]) => generate(...args) };
 });
 
@@ -75,7 +76,9 @@ describe("POST /api/assistant", () => {
   it("rejects malformed JSON and invalid bodies without echoing input", async () => {
     const bad = await POST(request(null, { raw: "{oops" }));
     expect(bad.status).toBe(400);
-    const res = await POST(request({ message: "<script>alert(1)</script>".repeat(40), context: delhiContext() }));
+    const res = await POST(
+      request({ message: "<script>alert(1)</script>".repeat(40), context: delhiContext() }),
+    );
     expect(res.status).toBe(400);
     const text = await res.text();
     expect(text).not.toContain("<script>");
@@ -99,7 +102,9 @@ describe("POST /api/assistant", () => {
   it("rejects model output with invented numbers or guarantees", async () => {
     generate.mockResolvedValue(JSON.stringify({ ...GOOD_RESPONSE, risk_context: "PM2.5 is 412 µg/m³." }));
     expect((await (await POST(request(valid()))).json()).error).toBe("ai_invalid_output");
-    generate.mockResolvedValue(JSON.stringify({ ...GOOD_RESPONSE, summary: "Walking now is completely safe." }));
+    generate.mockResolvedValue(
+      JSON.stringify({ ...GOOD_RESPONSE, summary: "Walking now is completely safe." }),
+    );
     expect((await (await POST(request(valid()))).json()).error).toBe("ai_invalid_output");
   });
 
@@ -142,5 +147,38 @@ describe("POST /api/assistant", () => {
     for (let i = 0; i < 11; i++) statuses.push((await burst()).status);
     expect(statuses.slice(0, 10).every((s) => s === 200)).toBe(true);
     expect(statuses[10]).toBe(429);
+  });
+});
+
+describe("same-origin protection", () => {
+  const post = (headers: Record<string, string>) =>
+    POST(
+      new NextRequest("http://localhost/api/assistant", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": `198.51.100.${Math.floor(Math.random() * 200)}`,
+          ...headers,
+        },
+        body: JSON.stringify(valid()),
+      }),
+    );
+
+  it("rejects cross-site browser requests with 403", async () => {
+    const res = await post({ "sec-fetch-site": "cross-site" });
+    expect(res.status).toBe(403);
+    expect((await res.json()).error).toBe("forbidden_origin");
+    expect(generate).not.toHaveBeenCalled();
+  });
+
+  it("rejects a foreign Origin when Sec-Fetch-Site is absent", async () => {
+    expect((await post({ origin: "https://evil.example" })).status).toBe(403);
+    expect((await post({ origin: "not a url" })).status).toBe(403);
+  });
+
+  it("allows same-origin browser requests", async () => {
+    generate.mockResolvedValue(JSON.stringify(GOOD_RESPONSE));
+    expect((await post({ "sec-fetch-site": "same-origin" })).status).toBe(200);
+    expect((await post({ origin: "http://localhost" })).status).toBe(200);
   });
 });

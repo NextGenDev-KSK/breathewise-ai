@@ -39,7 +39,9 @@ describe("content security policy", () => {
     expect(csp).not.toContain("unsafe-eval");
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("object-src 'none'");
-    expect(csp).toContain("connect-src 'self' https://air-quality-api.open-meteo.com https://geocoding-api.open-meteo.com");
+    expect(csp).toContain(
+      "connect-src 'self' https://air-quality-api.open-meteo.com https://geocoding-api.open-meteo.com",
+    );
   });
   it("only relaxes eval in development", () => {
     expect(buildContentSecurityPolicy("abc", true)).toContain("'unsafe-eval'");
@@ -86,8 +88,20 @@ describe("Gemini configuration", () => {
     expect(readGeminiConfig({ GEMINI_API_KEY: "  " } as unknown as NodeJS.ProcessEnv)).toBeNull();
   });
   it("defaults and sanitises the model name", () => {
-    expect(readGeminiConfig({ GEMINI_API_KEY: "k" } as unknown as NodeJS.ProcessEnv)?.model).toBe(DEFAULT_GEMINI_MODEL);
-    expect(readGeminiConfig({ GEMINI_API_KEY: "k", GEMINI_MODEL: "gemini-3.6-flash" } as unknown as NodeJS.ProcessEnv)?.model).toBe("gemini-3.6-flash");
-    expect(readGeminiConfig({ GEMINI_API_KEY: "k", GEMINI_MODEL: "../../evil?x=1" } as unknown as NodeJS.ProcessEnv)?.model).toBe(DEFAULT_GEMINI_MODEL);
+    expect(readGeminiConfig({ GEMINI_API_KEY: "k" } as unknown as NodeJS.ProcessEnv)?.model).toBe(
+      DEFAULT_GEMINI_MODEL,
+    );
+    expect(
+      readGeminiConfig({
+        GEMINI_API_KEY: "k",
+        GEMINI_MODEL: "gemini-3.6-flash",
+      } as unknown as NodeJS.ProcessEnv)?.model,
+    ).toBe("gemini-3.6-flash");
+    expect(
+      readGeminiConfig({
+        GEMINI_API_KEY: "k",
+        GEMINI_MODEL: "../../evil?x=1",
+      } as unknown as NodeJS.ProcessEnv)?.model,
+    ).toBe(DEFAULT_GEMINI_MODEL);
   });
 });

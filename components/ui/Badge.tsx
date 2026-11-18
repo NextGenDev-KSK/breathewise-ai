@@ -12,9 +12,23 @@ const TONES: Record<Tone, string> = {
   navy: "bg-navy-900 text-white border-navy-900",
 };
 
-export function Badge({ tone = "neutral", children, className }: { tone?: Tone; children: ReactNode; className?: string }) {
+export function Badge({
+  tone = "neutral",
+  children,
+  className,
+}: {
+  tone?: Tone;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold", TONES[tone], className)}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+        TONES[tone],
+        className,
+      )}
+    >
       {children}
     </span>
   );

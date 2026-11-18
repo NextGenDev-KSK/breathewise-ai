@@ -10,7 +10,8 @@ export const INDOOR_GUIDE: GuideSection[] = [
   {
     id: "ventilation",
     title: "Ventilation",
-    intro: "Fresh air dilutes indoor pollutants, but on high-pollution hours it also brings outdoor particles inside.",
+    intro:
+      "Fresh air dilutes indoor pollutants, but on high-pollution hours it also brings outdoor particles inside.",
     points: [
       "When outdoor air is comparatively clean, cross-ventilate by opening windows on opposite sides for a while.",
       "When outdoor pollution is high, avoid opening windows unnecessarily; air out briefly at the forecast's cleaner hours.",
@@ -54,7 +55,8 @@ export const INDOOR_GUIDE: GuideSection[] = [
   {
     id: "purification",
     title: "Air purifiers",
-    intro: "A correctly sized purifier with a true HEPA filter can reduce indoor particle levels in a closed room.",
+    intro:
+      "A correctly sized purifier with a true HEPA filter can reduce indoor particle levels in a closed room.",
     points: [
       "Look for a true HEPA filter and a stated Clean Air Delivery Rate (CADR) suited to your room size.",
       "Run it in the room you use most, often the bedroom, with doors and windows closed.",

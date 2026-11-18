@@ -19,25 +19,112 @@ export const EMISSION_SOURCE = {
  * not exact for any specific vehicle, city, occupancy level or journey.
  */
 export const EMISSION_FACTORS: Record<CommuteMode, EmissionFactor> = {
-  car: { mode: "car", label: "Private car (petrol/diesel)", gramsPerPassengerKm: 162, note: "Approximate; varies strongly with occupancy and vehicle." },
-  two_wheeler: { mode: "two_wheeler", label: "Two-wheeler (motorcycle/scooter)", gramsPerPassengerKm: 65, note: "Approximate motorcycle factor." },
-  bus: { mode: "bus", label: "Public bus", gramsPerPassengerKm: 28, note: "Urban non-AC bus example; depends on occupancy." },
-  metro: { mode: "metro", label: "Metro", gramsPerPassengerKm: 24, note: "Depends on ridership and grid electricity mix." },
-  walk: { mode: "walk", label: "Walking", gramsPerPassengerKm: 0, note: "Zero direct operational emissions in this simplified comparison." },
-  cycle: { mode: "cycle", label: "Cycling", gramsPerPassengerKm: 0, note: "Zero direct operational emissions in this simplified comparison." },
+  car: {
+    mode: "car",
+    label: "Private car (petrol/diesel)",
+    gramsPerPassengerKm: 162,
+    note: "Approximate; varies strongly with occupancy and vehicle.",
+  },
+  two_wheeler: {
+    mode: "two_wheeler",
+    label: "Two-wheeler (motorcycle/scooter)",
+    gramsPerPassengerKm: 65,
+    note: "Approximate motorcycle factor.",
+  },
+  bus: {
+    mode: "bus",
+    label: "Public bus",
+    gramsPerPassengerKm: 28,
+    note: "Urban non-AC bus example; depends on occupancy.",
+  },
+  metro: {
+    mode: "metro",
+    label: "Metro",
+    gramsPerPassengerKm: 24,
+    note: "Depends on ridership and grid electricity mix.",
+  },
+  walk: {
+    mode: "walk",
+    label: "Walking",
+    gramsPerPassengerKm: 0,
+    note: "Zero direct operational emissions in this simplified comparison.",
+  },
+  cycle: {
+    mode: "cycle",
+    label: "Cycling",
+    gramsPerPassengerKm: 0,
+    note: "Zero direct operational emissions in this simplified comparison.",
+  },
 };
 
 /** Average weeks per month (52 / 12). */
 export const WEEKS_PER_MONTH = 52 / 12;
 
 export const CommuteInputSchema = z.object({
-  distanceKm: z.number({ error: "Enter a distance in kilometres." }).min(0.1, "Distance must be at least 0.1 km.").max(200, "Distance must be 200 km or less."),
-  tripsPerDay: z.number({ error: "Enter the number of trips per day." }).int("Trips per day must be a whole number.").min(1, "At least 1 trip per day.").max(10, "At most 10 trips per day."),
-  daysPerWeek: z.number({ error: "Enter commuting days per week." }).int("Days must be a whole number.").min(1, "At least 1 day per week.").max(7, "At most 7 days per week."),
+  distanceKm: z
+    .number({ error: "Enter a distance in kilometres." })
+    .min(0.1, "Distance must be at least 0.1 km.")
+    .max(200, "Distance must be 200 km or less."),
+  tripsPerDay: z
+    .number({ error: "Enter the number of trips per day." })
+    .int("Trips per day must be a whole number.")
+    .min(1, "At least 1 trip per day.")
+    .max(10, "At most 10 trips per day."),
+  daysPerWeek: z
+    .number({ error: "Enter commuting days per week." })
+    .int("Days must be a whole number.")
+    .min(1, "At least 1 day per week.")
+    .max(7, "At most 7 days per week."),
   currentMode: z.enum(COMMUTE_MODES),
   alternativeMode: z.enum(COMMUTE_MODES),
 });
 export type CommuteInput = z.infer<typeof CommuteInputSchema>;
+
+export const COMMUTE_FIELDS = [
+  "distanceKm",
+  "tripsPerDay",
+  "daysPerWeek",
+  "currentMode",
+  "alternativeMode",
+] as const;
+export type CommuteField = (typeof COMMUTE_FIELDS)[number];
+
+/** Raw form values: numbers are still text, exactly as typed. */
+export interface CommuteFormValues {
+  distanceKm: string;
+  tripsPerDay: string;
+  daysPerWeek: string;
+  currentMode: CommuteMode;
+  alternativeMode: CommuteMode;
+}
+
+export type CommuteFormResult =
+  { ok: true; input: CommuteInput } | { ok: false; errors: Partial<Record<CommuteField, string>> };
+
+function isCommuteField(key: unknown): key is CommuteField {
+  return typeof key === "string" && (COMMUTE_FIELDS as readonly string[]).includes(key);
+}
+
+/** Empty text means "not entered", which the schema reports with a friendly message. */
+const numberOrUndefined = (text: string): number | undefined =>
+  text.trim() === "" ? undefined : Number(text);
+
+/** Validates typed form values; on failure returns the first error message for each field. */
+export function parseCommuteForm(form: CommuteFormValues): CommuteFormResult {
+  const parsed = CommuteInputSchema.safeParse({
+    ...form,
+    distanceKm: numberOrUndefined(form.distanceKm),
+    tripsPerDay: numberOrUndefined(form.tripsPerDay),
+    daysPerWeek: numberOrUndefined(form.daysPerWeek),
+  });
+  if (parsed.success) return { ok: true, input: parsed.data };
+  const errors: Partial<Record<CommuteField, string>> = {};
+  for (const issue of parsed.error.issues) {
+    const field = issue.path[0];
+    if (isCommuteField(field)) errors[field] ??= issue.message;
+  }
+  return { ok: false, errors };
+}
 
 export interface CommuteResult {
   weeklyKm: number;
@@ -57,7 +144,12 @@ const round2 = (v: number) => Math.round(v * 100) / 100;
 function modeEmissions(mode: CommuteMode, distanceKm: number, weeklyKm: number) {
   const g = EMISSION_FACTORS[mode].gramsPerPassengerKm;
   const weeklyKg = toKg(g * weeklyKm);
-  return { mode, perTripKg: round2(toKg(g * distanceKm)), weeklyKg: round2(weeklyKg), monthlyKg: round2(weeklyKg * WEEKS_PER_MONTH) };
+  return {
+    mode,
+    perTripKg: round2(toKg(g * distanceKm)),
+    weeklyKg: round2(weeklyKg),
+    monthlyKg: round2(weeklyKg * WEEKS_PER_MONTH),
+  };
 }
 
 /** Estimates CO₂e for the current and alternative modes. Input must already be validated. */
@@ -77,6 +169,11 @@ export function calculateCommuteEmissions(input: CommuteInput): CommuteResult {
     yearlySavingKg: round2(weeklySavingKg * 52),
     relativeChange: curG > 0 ? (altG - curG) / curG : null,
   };
+}
+
+/** Modes where the traveller breathes roadside air directly (no enclosed cabin). */
+export function isOpenAirMode(mode: CommuteMode): boolean {
+  return mode === "two_wheeler" || mode === "walk" || mode === "cycle";
 }
 
 /** Grams CO₂e avoided per passenger-km by switching modes (negative = more emissions). */

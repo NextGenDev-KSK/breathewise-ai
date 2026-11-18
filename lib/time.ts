@@ -6,6 +6,13 @@
 
 const LOCAL_TIME = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/;
 
+export const MINUTE_MS = 60_000;
+export const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+
+/** Formats a location-local wall-clock string ("2026-11-17T06:00") for display. */
+export type FormatTime = (localTime: string) => string;
+
 export function isLocalTimeString(value: string): boolean {
   return LOCAL_TIME.test(value);
 }
@@ -31,11 +38,14 @@ export function localHour(localTime: string): number {
   return Number(localTime.slice(11, 13));
 }
 
-export function localDate(localTime: string): string {
+function localDate(localTime: string): string {
   return localTime.slice(0, 10);
 }
 
 export type TimeFormat = "24h" | "12h";
+
+/** Default display format used by the engine when the caller does not pass one. */
+export const formatTime24: FormatTime = (localTime) => formatClock(localTime, "24h");
 
 /** "06:00" or "6 AM" from a wall-clock string. */
 export function formatClock(localTime: string, format: TimeFormat = "24h"): string {
@@ -50,6 +60,11 @@ export function formatClock(localTime: string, format: TimeFormat = "24h"): stri
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+/** Short weekday name ("Tue") for an ISO calendar date ("2026-11-17"). */
+export function weekdayShort(isoDate: string): string {
+  return WEEKDAYS[new Date(`${isoDate}T00:00:00Z`).getUTCDay()] ?? "";
+}
+
 /** "Tue 17 Nov" from a wall-clock string (calendar arithmetic only). */
 export function formatDay(localTime: string): string {
   const [y, m, d] = localDate(localTime).split("-").map(Number) as [number, number, number];
@@ -62,14 +77,14 @@ export function relativeDayLabel(localTime: string, nowLocal: string): string {
   const day = localDate(localTime);
   const today = localDate(nowLocal);
   if (day === today) return "Today";
-  const t = Date.parse(`${today}T00:00:00Z`) + 86_400_000;
+  const t = Date.parse(`${today}T00:00:00Z`) + DAY_MS;
   if (day === new Date(t).toISOString().slice(0, 10)) return "Tomorrow";
   return formatDay(localTime);
 }
 
 /** Human description of data age, e.g. "12 min ago". */
 export function formatAge(fromMs: number, nowMs: number): string {
-  const minutes = Math.max(0, Math.floor((nowMs - fromMs) / 60_000));
+  const minutes = Math.max(0, Math.floor((nowMs - fromMs) / MINUTE_MS));
   if (minutes < 1) return "just now";
   if (minutes < 60) return `${minutes} min ago`;
   const hours = Math.round(minutes / 60);

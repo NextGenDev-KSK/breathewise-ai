@@ -1,8 +1,8 @@
 import { z } from "zod";
 import type { Place } from "@/types/air";
 
-export const GEOCODING_ENDPOINT = "https://geocoding-api.open-meteo.com/v1/search";
-export const MIN_QUERY_LENGTH = 2;
+const GEOCODING_ENDPOINT = "https://geocoding-api.open-meteo.com/v1/search";
+const MIN_QUERY_LENGTH = 2;
 export const MAX_QUERY_LENGTH = 80;
 
 const ResultSchema = z.object({
@@ -17,7 +17,10 @@ const ResultSchema = z.object({
 const ResponseSchema = z.object({ results: z.array(z.unknown()).optional() });
 
 export class GeocodingError extends Error {
-  constructor(message: string, readonly kind: "network" | "http" | "invalid-response" | "aborted") {
+  constructor(
+    message: string,
+    readonly kind: "network" | "http" | "invalid-response" | "aborted",
+  ) {
     super(message);
     this.name = "GeocodingError";
   }
@@ -26,7 +29,11 @@ export class GeocodingError extends Error {
 /** Trims and bounds a search query; returns null if it is too short to search. */
 export function sanitizeQuery(query: string): string | null {
   // Strip control characters, collapse whitespace.
-  const cleaned = query.replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " ").trim().slice(0, MAX_QUERY_LENGTH);
+  const cleaned = query
+    .replace(/[\u0000-\u001f\u007f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, MAX_QUERY_LENGTH);
   return cleaned.length >= MIN_QUERY_LENGTH ? cleaned : null;
 }
 
@@ -38,7 +45,8 @@ export function buildGeocodingUrl(query: string, count = 8): string {
 /** Parses geocoder results, silently dropping malformed entries. */
 export function parseGeocodingResults(raw: unknown): Place[] {
   const parsed = ResponseSchema.safeParse(raw);
-  if (!parsed.success) throw new GeocodingError("Location search returned an unexpected format.", "invalid-response");
+  if (!parsed.success)
+    throw new GeocodingError("Location search returned an unexpected format.", "invalid-response");
   const places: Place[] = [];
   for (const item of parsed.data.results ?? []) {
     const r = ResultSchema.safeParse(item);
@@ -66,9 +74,13 @@ export async function searchPlaces(
   const fetchImpl = opts.fetchImpl ?? fetch;
   let res: Response;
   try {
-    res = await fetchImpl(buildGeocodingUrl(q), { signal: opts.signal, headers: { Accept: "application/json" } });
+    res = await fetchImpl(buildGeocodingUrl(q), {
+      signal: opts.signal,
+      headers: { Accept: "application/json" },
+    });
   } catch (err) {
-    if (err instanceof DOMException && err.name === "AbortError") throw new GeocodingError("Search cancelled.", "aborted");
+    if (err instanceof DOMException && err.name === "AbortError")
+      throw new GeocodingError("Search cancelled.", "aborted");
     throw new GeocodingError("Could not reach the location search service.", "network");
   }
   if (!res.ok) throw new GeocodingError(`Location search failed (status ${res.status}).`, "http");
@@ -91,6 +103,8 @@ export function placeFromCoordinates(latitude: number, longitude: number): Place
 }
 
 export function placeLabel(place: Place): string {
-  const parts = [place.name, place.admin1, place.source === "geolocation" ? undefined : place.country].filter(Boolean);
+  const parts = [place.name, place.admin1, place.source === "geolocation" ? undefined : place.country].filter(
+    Boolean,
+  );
   return parts.join(", ");
 }

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { calculateCommuteEmissions, CommuteInputSchema, EMISSION_FACTORS, savingPerKm, WEEKS_PER_MONTH } from "@/lib/engine/emissions";
+import {
+  calculateCommuteEmissions,
+  CommuteInputSchema,
+  EMISSION_FACTORS,
+  savingPerKm,
+  WEEKS_PER_MONTH,
+} from "@/lib/engine/emissions";
 
 describe("emission factors", () => {
   it("match the documented OECD 2023 Indian case-study values", () => {
@@ -14,7 +20,13 @@ describe("emission factors", () => {
 
 describe("calculateCommuteEmissions", () => {
   it("computes car → metro for 10 km × 2 trips × 5 days", () => {
-    const r = calculateCommuteEmissions({ distanceKm: 10, tripsPerDay: 2, daysPerWeek: 5, currentMode: "car", alternativeMode: "metro" });
+    const r = calculateCommuteEmissions({
+      distanceKm: 10,
+      tripsPerDay: 2,
+      daysPerWeek: 5,
+      currentMode: "car",
+      alternativeMode: "metro",
+    });
     expect(r.weeklyKm).toBe(100);
     expect(r.current.weeklyKg).toBe(16.2);
     expect(r.alternative.weeklyKg).toBe(2.4);
@@ -27,18 +39,36 @@ describe("calculateCommuteEmissions", () => {
   });
 
   it("reports zero alternative emissions for walking and cycling", () => {
-    const r = calculateCommuteEmissions({ distanceKm: 3, tripsPerDay: 2, daysPerWeek: 6, currentMode: "two_wheeler", alternativeMode: "cycle" });
+    const r = calculateCommuteEmissions({
+      distanceKm: 3,
+      tripsPerDay: 2,
+      daysPerWeek: 6,
+      currentMode: "two_wheeler",
+      alternativeMode: "cycle",
+    });
     expect(r.alternative.weeklyKg).toBe(0);
     expect(r.weeklySavingKg).toBe(2.34);
   });
 
   it("returns a negative saving when the alternative emits more", () => {
-    const r = calculateCommuteEmissions({ distanceKm: 5, tripsPerDay: 2, daysPerWeek: 5, currentMode: "metro", alternativeMode: "car" });
+    const r = calculateCommuteEmissions({
+      distanceKm: 5,
+      tripsPerDay: 2,
+      daysPerWeek: 5,
+      currentMode: "metro",
+      alternativeMode: "car",
+    });
     expect(r.weeklySavingKg).toBeLessThan(0);
   });
 
   it("has no relative change when the current mode emits nothing", () => {
-    const r = calculateCommuteEmissions({ distanceKm: 2, tripsPerDay: 2, daysPerWeek: 5, currentMode: "walk", alternativeMode: "bus" });
+    const r = calculateCommuteEmissions({
+      distanceKm: 2,
+      tripsPerDay: 2,
+      daysPerWeek: 5,
+      currentMode: "walk",
+      alternativeMode: "bus",
+    });
     expect(r.relativeChange).toBeNull();
   });
 
@@ -49,7 +79,13 @@ describe("calculateCommuteEmissions", () => {
 });
 
 describe("CommuteInputSchema", () => {
-  const valid = { distanceKm: 10, tripsPerDay: 2, daysPerWeek: 5, currentMode: "car", alternativeMode: "bus" };
+  const valid = {
+    distanceKm: 10,
+    tripsPerDay: 2,
+    daysPerWeek: 5,
+    currentMode: "car",
+    alternativeMode: "bus",
+  };
   it("accepts valid input", () => expect(CommuteInputSchema.safeParse(valid).success).toBe(true));
   it.each([
     [{ distanceKm: 0 }, "at least 0.1"],

@@ -49,11 +49,21 @@ describe("HourlyChart", () => {
     { time: "2026-11-17T08:00", value: 20, level: 1 as const },
   ];
   it("summarises the series in text, including missing hours", () => {
-    expect(summarizeSeries(points, "PM2.5", (t) => t.slice(11))).toBe("PM2.5 ranges from 20 (lowest at 08:00) to 80 (highest at 06:00) across 3 hours. 1 hours have no data.");
+    expect(summarizeSeries(points, "PM2.5", (t) => t.slice(11))).toBe(
+      "PM2.5 ranges from 20 (lowest at 08:00) to 80 (highest at 06:00) across 3 hours. 1 hours have no data.",
+    );
   });
   it("exposes a summary as the chart's accessible name and an optional data table", async () => {
     const user = userEvent.setup();
-    render(<HourlyChart points={points} label="PM2.5" unit="µg/m³" formatTime={(t) => t.slice(11)} title="PM2.5 test" />);
+    render(
+      <HourlyChart
+        points={points}
+        label="PM2.5"
+        unit="µg/m³"
+        formatTime={(t) => t.slice(11)}
+        title="PM2.5 test"
+      />,
+    );
     expect(screen.getByRole("img")).toHaveAccessibleName(/ranges from 20/);
     const toggle = screen.getByRole("button", { name: "Show data table" });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
@@ -76,7 +86,9 @@ describe("LocationPicker", () => {
     expect(input).toHaveAttribute("aria-expanded", "true");
     expect(option).toHaveAttribute("aria-selected", "true");
     await user.keyboard("{Enter}");
-    await waitFor(() => expect(JSON.parse(localStorage.getItem("breathewise:v1:place") ?? "null")?.name).toBe("Pune"));
+    await waitFor(() =>
+      expect(JSON.parse(localStorage.getItem("breathewise:v1:place") ?? "null")?.name).toBe("Pune"),
+    );
     expect(await screen.findByText(/Showing air quality for Pune/)).toBeInTheDocument();
   });
 
@@ -93,7 +105,11 @@ describe("AssistantChat", () => {
   it("answers in rule-based mode when Gemini is not configured, and says so", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (url: string) => (String(url).startsWith("/api/assistant") ? new Response(JSON.stringify({ configured: false })) : new Response("{}", { status: 500 }))),
+      vi.fn(async (url: string) =>
+        String(url).startsWith("/api/assistant")
+          ? new Response(JSON.stringify({ configured: false }))
+          : new Response("{}", { status: 500 }),
+      ),
     );
     seedStorage({ settings: { ...DEFAULT_SETTINGS, demoMode: true, onboarded: true } });
     const user = userEvent.setup();
@@ -106,7 +122,10 @@ describe("AssistantChat", () => {
   });
 
   it("validates input length and emptiness", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ configured: false }))));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify({ configured: false }))),
+    );
     const user = userEvent.setup();
     renderWithApp(<AssistantChat />);
     await user.click(screen.getByRole("button", { name: "Ask" }));

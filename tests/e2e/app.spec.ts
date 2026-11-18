@@ -50,7 +50,9 @@ test.describe("dashboard and location", () => {
     await page.goto("/");
     await expect(page.getByText("86.6 µg/m³")).toBeVisible();
     await page.unroute("https://air-quality-api.open-meteo.com/**");
-    await page.route("https://air-quality-api.open-meteo.com/**", (r) => r.fulfill({ status: 503, body: "{}" }));
+    await page.route("https://air-quality-api.open-meteo.com/**", (r) =>
+      r.fulfill({ status: 503, body: "{}" }),
+    );
     await page.getByRole("button", { name: "Refresh air-quality data" }).click();
     await expect(page.getByText(/Showing a saved copy/)).toBeVisible();
   });
@@ -64,9 +66,11 @@ test("forecast: find my better outdoor window", async ({ page }) => {
   const result = page.getByRole("region", { name: "Outdoor window result" });
   await expect(result).toBeVisible();
   await expect(result).toContainText(/Tomorrow 1[2-6]:00/);
-  await expect(result).toContainText("model forecasts, not monitoring-station measurements");
+  await expect(result).toContainText("not monitoring-station measurements");
   await expect(result).not.toContainText(/\bsafe\b/i);
-  await page.getByRole("radio", { name: "US AQI" }).click();
+  // Users click the visible label; the native radio input is visually hidden.
+  await page.locator("label", { hasText: /^US AQI$/ }).click();
+  await expect(page.getByRole("radio", { name: "US AQI" })).toBeChecked();
   await expect(page.getByRole("img", { name: /US AQI ranges from/ })).toBeVisible();
   await expect(page.getByRole("table", { name: "Daily forecast summary" })).toBeVisible();
 });
@@ -139,7 +143,13 @@ test.describe("assistant", () => {
               response: {
                 summary: "Delay your walk: air is unhealthy now and lower tomorrow afternoon.",
                 risk_context: "US AQI is 152 (Unhealthy), led by PM2.5 at 86.6 µg/m³.",
-                top_actions: [{ action: "Walk tomorrow afternoon", why: "Forecast PM2.5 is lowest then.", when: "Tomorrow afternoon" }],
+                top_actions: [
+                  {
+                    action: "Walk tomorrow afternoon",
+                    why: "Forecast PM2.5 is lowest then.",
+                    when: "Tomorrow afternoon",
+                  },
+                ],
                 timing: "Tomorrow afternoon is comparatively better.",
                 indoor_recommendations: ["Keep windows closed tonight."],
                 commute_recommendation: "Prefer metro where practical.",
@@ -154,13 +164,17 @@ test.describe("assistant", () => {
     await expect(page.getByText("Gemini AI, grounded in your local data")).toBeVisible();
     await page.getByRole("button", { name: "Is it a good time to go walking?" }).click();
     await expect(page.getByText("Gemini · gemini-3.8-flash")).toBeVisible();
-    await expect(page.getByText("Delay your walk: air is unhealthy now and lower tomorrow afternoon.")).toBeVisible();
+    await expect(
+      page.getByText("Delay your walk: air is unhealthy now and lower tomorrow afternoon."),
+    ).toBeVisible();
   });
 
   test("falls back to rules when the AI response fails validation", async ({ page }) => {
     await setup(page);
     await page.route("**/api/assistant", (route) =>
-      route.request().method() === "GET" ? route.fulfill({ json: { configured: true } }) : route.fulfill({ json: { source: "gemini", model: "x", response: { summary: "<b>bad</b>" } } }),
+      route.request().method() === "GET"
+        ? route.fulfill({ json: { configured: true } })
+        : route.fulfill({ json: { source: "gemini", model: "x", response: { summary: "<b>bad</b>" } } }),
     );
     await page.goto("/assistant");
     await page.getByRole("button", { name: "Why is PM2.5 particularly concerning?" }).click();

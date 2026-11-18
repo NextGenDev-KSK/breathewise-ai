@@ -32,7 +32,12 @@ export function DataStatus() {
 
   return (
     <div className="flex items-center gap-2">
-      <span className={cn("inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-xs font-semibold", tone)}>
+      <span
+        className={cn(
+          "inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold whitespace-nowrap",
+          tone,
+        )}
+      >
         <Icon aria-hidden="true" className="size-3.5" />
         {label}
       </span>
@@ -41,7 +46,7 @@ export function DataStatus() {
           type="button"
           onClick={refresh}
           disabled={air.refreshing}
-          className="grid size-11 place-items-center rounded-lg border border-line-strong bg-surface text-ink-2 hover:bg-canvas disabled:opacity-70"
+          className="border-line-strong bg-surface text-ink-2 hover:bg-canvas grid size-11 place-items-center rounded-lg border disabled:opacity-70"
           aria-label={air.refreshing ? "Refreshing data" : "Refresh air-quality data"}
         >
           <RefreshCw aria-hidden="true" className={cn("size-4", air.refreshing && "animate-spin")} />

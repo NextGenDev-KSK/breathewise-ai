@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { AirQualityError, buildAirQualityUrl, fetchAirQuality, isEmptySnapshot, normalizeAirQuality } from "@/lib/air/openMeteo";
+import {
+  AirQualityError,
+  buildAirQualityUrl,
+  fetchAirQuality,
+  isEmptySnapshot,
+  normalizeAirQuality,
+} from "@/lib/air/openMeteo";
 import { selectModelForLocation } from "@/lib/air/models";
 import { BERLIN, DELHI, DELHI_NOW, delhiRaw } from "../fixtures/builders";
 
@@ -14,7 +20,9 @@ describe("buildAirQualityUrl", () => {
     expect(url.searchParams.get("timezone")).toBe("auto");
     expect(url.searchParams.get("domains")).toBe("cams_global");
     expect(url.searchParams.get("forecast_days")).toBe("4");
-    expect(url.searchParams.get("current")?.split(",")).toEqual(expect.arrayContaining(["pm2_5", "us_aqi", "us_aqi_pm2_5", "european_aqi"]));
+    expect(url.searchParams.get("current")?.split(",")).toEqual(
+      expect.arrayContaining(["pm2_5", "us_aqi", "us_aqi_pm2_5", "european_aqi"]),
+    );
     expect(url.searchParams.get("hourly")).toBe("pm2_5,pm10,nitrogen_dioxide,ozone,us_aqi,european_aqi");
   });
 
@@ -97,8 +105,12 @@ describe("fetchAirQuality", () => {
   });
 
   it("reports HTTP errors and network failures", async () => {
-    await expect(fetchAirQuality(DELHI, { fetchImpl: vi.fn().mockResolvedValue(jsonResponse({}, 500)) })).rejects.toMatchObject({ kind: "http" });
-    await expect(fetchAirQuality(DELHI, { fetchImpl: vi.fn().mockRejectedValue(new TypeError("Failed to fetch")) })).rejects.toMatchObject({ kind: "network" });
+    await expect(
+      fetchAirQuality(DELHI, { fetchImpl: vi.fn().mockResolvedValue(jsonResponse({}, 500)) }),
+    ).rejects.toMatchObject({ kind: "http" });
+    await expect(
+      fetchAirQuality(DELHI, { fetchImpl: vi.fn().mockRejectedValue(new TypeError("Failed to fetch")) }),
+    ).rejects.toMatchObject({ kind: "network" });
   });
 
   it("reports unreadable JSON as an invalid response", async () => {
@@ -118,7 +130,10 @@ describe("fetchAirQuality", () => {
       current: { time: "2026-11-17T22:00" },
       hourly: { time: hourly.time, pm2_5: (hourly.time ?? []).map(() => null) },
     };
-    const fetchImpl = vi.fn().mockResolvedValueOnce(jsonResponse(empty)).mockResolvedValueOnce(jsonResponse(delhiRaw));
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(empty))
+      .mockResolvedValueOnce(jsonResponse(delhiRaw));
     const s = await fetchAirQuality(BERLIN, { fetchImpl });
     expect(fetchImpl).toHaveBeenCalledTimes(2);
     expect(String(fetchImpl.mock.calls[1]![0])).toContain("domains=cams_global");

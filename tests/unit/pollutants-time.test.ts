@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { formatConcentration, guidelineRatio, POLLUTANTS } from "@/lib/air/pollutants";
-import { clockToMinutes, epochToLocalTime, formatAge, formatClock, formatDay, localTimeToEpoch, relativeDayLabel } from "@/lib/time";
+import {
+  clockToMinutes,
+  epochToLocalTime,
+  formatAge,
+  formatClock,
+  formatDay,
+  localTimeToEpoch,
+  relativeDayLabel,
+} from "@/lib/time";
 
 describe("pollutant formatting", () => {
   it("formats values with units", () => {

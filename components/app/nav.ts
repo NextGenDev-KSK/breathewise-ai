@@ -1,4 +1,14 @@
-import { CalendarDays, Gauge, House, Settings, Sparkles, Sunrise, TramFront, Trophy, type LucideIcon } from "lucide-react";
+import {
+  CalendarDays,
+  Gauge,
+  House,
+  Settings,
+  Sparkles,
+  Sunrise,
+  TramFront,
+  Trophy,
+  type LucideIcon,
+} from "lucide-react";
 
 export interface NavItem {
   href: string;

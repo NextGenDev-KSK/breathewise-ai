@@ -20,7 +20,10 @@ import { buildSeries } from "@/lib/air/series";
 function Dashboard({ snapshot }: { snapshot: AirQualitySnapshot }) {
   const { preferences, nowMs, formatTime } = useApp();
   const recs = useMemo(
-    () => generateRecommendations({ snapshot, preferences, nowMs, formatTime }).filter((r) => r.category !== "data" || r.id === "data-stale"),
+    () =>
+      generateRecommendations({ snapshot, preferences, nowMs, formatTime }).filter(
+        (r) => r.category !== "data" || r.id === "data-stale",
+      ),
     [snapshot, preferences, nowMs, formatTime],
   );
   const next24 = useMemo(() => buildSeries(upcomingHours(snapshot, nowMs, 24), "pm2_5"), [snapshot, nowMs]);
@@ -36,10 +39,16 @@ function Dashboard({ snapshot }: { snapshot: AirQualitySnapshot }) {
             <h2 id="actions-heading" className="text-lg font-semibold">
               What to do today
             </h2>
-            <p className="text-sm text-ink-3">Prioritised by urgency and practicality. Open any card to see the data behind it.</p>
+            <p className="text-ink-3 text-sm">
+              Prioritised by urgency and practicality. Open any card to see the data behind it.
+            </p>
           </div>
-          <Link href="/plan" className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-brand-700 hover:underline">
-            <ListChecks aria-hidden="true" className="size-4" /> Full day plan <ArrowRight aria-hidden="true" className="size-4" />
+          <Link
+            href="/plan"
+            className="text-brand-700 inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold hover:underline"
+          >
+            <ListChecks aria-hidden="true" className="size-4" /> Full day plan{" "}
+            <ArrowRight aria-hidden="true" className="size-4" />
           </Link>
         </div>
         {recs.length ? (
@@ -49,7 +58,9 @@ function Dashboard({ snapshot }: { snapshot: AirQualitySnapshot }) {
             ))}
           </div>
         ) : (
-          <p className="rounded-xl border border-line bg-surface p-4 text-sm text-ink-2">No specific actions are triggered by the current data.</p>
+          <p className="border-line bg-surface text-ink-2 rounded-xl border p-4 text-sm">
+            No specific actions are triggered by the current data.
+          </p>
         )}
       </section>
 
@@ -59,13 +70,22 @@ function Dashboard({ snapshot }: { snapshot: AirQualitySnapshot }) {
           title="PM2.5 over the next 24 hours"
           description="Hourly model forecast. Bar colour and the table show the concern level."
           action={
-            <Link href="/forecast" className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-brand-700 hover:underline">
+            <Link
+              href="/forecast"
+              className="text-brand-700 inline-flex min-h-11 items-center gap-1 text-sm font-semibold hover:underline"
+            >
               Forecast & best times <ArrowRight aria-hidden="true" className="size-4" />
             </Link>
           }
         />
         <div className="p-5">
-          <HourlyChart points={next24} label="PM2.5" unit="µg/m³" formatTime={formatTime} title="PM2.5 forecast for the next 24 hours" />
+          <HourlyChart
+            points={next24}
+            label="PM2.5"
+            unit="µg/m³"
+            formatTime={formatTime}
+            title="PM2.5 forecast for the next 24 hours"
+          />
         </div>
       </Card>
 

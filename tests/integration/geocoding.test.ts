@@ -1,5 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildGeocodingUrl, parseGeocodingResults, placeFromCoordinates, placeLabel, sanitizeQuery, searchPlaces, GeocodingError } from "@/lib/air/geocoding";
+import {
+  buildGeocodingUrl,
+  parseGeocodingResults,
+  placeFromCoordinates,
+  placeLabel,
+  sanitizeQuery,
+  searchPlaces,
+  GeocodingError,
+} from "@/lib/air/geocoding";
 import pune from "../fixtures/geocoding-pune.json";
 
 describe("sanitizeQuery", () => {
@@ -27,7 +35,9 @@ describe("geocoding", () => {
   });
 
   it("drops malformed entries and handles no results", () => {
-    expect(parseGeocodingResults({ results: [{ id: 1, name: "X", latitude: 999, longitude: 0 }, { foo: 1 }] })).toEqual([]);
+    expect(
+      parseGeocodingResults({ results: [{ id: 1, name: "X", latitude: 999, longitude: 0 }, { foo: 1 }] }),
+    ).toEqual([]);
     expect(parseGeocodingResults({ generationtime_ms: 1 })).toEqual([]);
     expect(() => parseGeocodingResults("nope")).toThrow(GeocodingError);
   });
@@ -41,8 +51,12 @@ describe("geocoding", () => {
   });
 
   it("maps failures to typed errors", async () => {
-    await expect(searchPlaces("Pune", { fetchImpl: vi.fn().mockResolvedValue(new Response("", { status: 503 })) })).rejects.toMatchObject({ kind: "http" });
-    await expect(searchPlaces("Pune", { fetchImpl: vi.fn().mockRejectedValue(new TypeError("offline")) })).rejects.toMatchObject({ kind: "network" });
+    await expect(
+      searchPlaces("Pune", { fetchImpl: vi.fn().mockResolvedValue(new Response("", { status: 503 })) }),
+    ).rejects.toMatchObject({ kind: "http" });
+    await expect(
+      searchPlaces("Pune", { fetchImpl: vi.fn().mockRejectedValue(new TypeError("offline")) }),
+    ).rejects.toMatchObject({ kind: "network" });
   });
 
   it("rounds detected coordinates to about 1 km", () => {

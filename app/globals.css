@@ -36,13 +36,27 @@
   --color-danger-700: #b91c1c;
 
   /* Concern-level palette: background, text (≥ 4.5:1 on its background), and solid mark (≥ 3:1 on white). */
-  --color-lvl0-bg: #d1fae5;  --color-lvl0-fg: #065f46;  --color-lvl0: #059669;
-  --color-lvl1-bg: #fef9c3;  --color-lvl1-fg: #713f12;  --color-lvl1: #a16207;
-  --color-lvl2-bg: #ffedd5;  --color-lvl2-fg: #9a3412;  --color-lvl2: #ea580c;
-  --color-lvl3-bg: #fee2e2;  --color-lvl3-fg: #991b1b;  --color-lvl3: #dc2626;
-  --color-lvl4-bg: #f3e8ff;  --color-lvl4-fg: #6b21a8;  --color-lvl4: #9333ea;
-  --color-lvl5-bg: #ffe4e6;  --color-lvl5-fg: #881337;  --color-lvl5: #881337;
-  --color-lvlna-bg: #f1f5f9; --color-lvlna-fg: #334155; --color-lvlna: #64748b;
+  --color-lvl0-bg: #d1fae5;
+  --color-lvl0-fg: #065f46;
+  --color-lvl0: #059669;
+  --color-lvl1-bg: #fef9c3;
+  --color-lvl1-fg: #713f12;
+  --color-lvl1: #a16207;
+  --color-lvl2-bg: #ffedd5;
+  --color-lvl2-fg: #9a3412;
+  --color-lvl2: #ea580c;
+  --color-lvl3-bg: #fee2e2;
+  --color-lvl3-fg: #991b1b;
+  --color-lvl3: #dc2626;
+  --color-lvl4-bg: #f3e8ff;
+  --color-lvl4-fg: #6b21a8;
+  --color-lvl4: #9333ea;
+  --color-lvl5-bg: #ffe4e6;
+  --color-lvl5-fg: #881337;
+  --color-lvl5: #881337;
+  --color-lvlna-bg: #f1f5f9;
+  --color-lvlna-fg: #334155;
+  --color-lvlna: #64748b;
 
   --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 1px 3px rgb(15 23 42 / 0.06);
   --shadow-raised: 0 4px 16px -4px rgb(15 23 42 / 0.12), 0 2px 4px rgb(15 23 42 / 0.05);
@@ -60,7 +74,9 @@
     font-feature-settings: "cv11", "ss01";
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3 {
+  h1,
+  h2,
+  h3 {
     font-family: var(--font-display);
     letter-spacing: -0.01em;
     text-wrap: balance;
@@ -85,7 +101,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -94,7 +112,15 @@
 }
 
 @keyframes toast-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
-.animate-toast-in { animation: toast-in 180ms ease-out; }
+.animate-toast-in {
+  animation: toast-in 180ms ease-out;
+}

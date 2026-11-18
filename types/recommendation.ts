@@ -1,13 +1,5 @@
 export type RecommendationCategory =
-  | "outdoor"
-  | "household"
-  | "ventilation"
-  | "indoor"
-  | "cooking"
-  | "dust"
-  | "commute"
-  | "education"
-  | "data";
+  "outdoor" | "household" | "ventilation" | "indoor" | "cooking" | "dust" | "commute" | "education" | "data";
 
 /** What kind of benefit an action plausibly offers. Never a quantified health outcome. */
 export type ImpactType = "exposure-reduction" | "indoor-air" | "emissions-reduction" | "awareness";

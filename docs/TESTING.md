@@ -1,35 +1,39 @@
 # Testing
 
-All results below were produced on 2026-11-17 on Linux with Node 22.23.2 and Chromium 1255 (Playwright 1.65.1). The suites never call live services.
+All results below were produced on 2026-11-18 on Linux with Node 22.23.2 and Chromium 1255 (Playwright 1.65.1). The suites never call live services.
 
 ## Commands
 
 ```bash
-npm run lint          # ESLint, --max-warnings=0
+npm run format:check  # Prettier
+npm run lint          # ESLint with type-aware rules, --max-warnings=0
+npm run lint:unused   # Knip: unused files, exports, dependencies
 npm run typecheck     # tsc --noEmit (strict)
-npm run test          # Vitest: unit + integration + component
-npm run test:coverage # with v8 coverage
-npx playwright install chromium   # first time only
+npm run test          # Vitest: unit + integration + hook + component
+npm run test:coverage # with v8 coverage and enforced thresholds
+npx playwright install chromium firefox   # first time only (CI also installs webkit)
 npm run test:e2e      # builds, starts `next start` on :3200, runs Playwright
 ```
 
 ## Results (latest run)
 
-| Suite | Result |
-|---|---|
-| ESLint | 0 errors, 0 warnings |
-| TypeScript | 0 errors |
-| Vitest | **15 files, 186 tests passed** |
-| Coverage (`lib/**`, `app/api/**`) | 95.9 % statements · 82.6 % branches · 97.7 % functions · 97.9 % lines |
-| Coverage (`lib/engine`) | 97.3 % statements · 98.2 % lines |
-| Playwright | **35 passed**, 1 skipped (the mobile-only test on the desktop project) |
-| Playwright `--repeat-each=3` | **105 passed**, 0 flaky |
-| axe-core (WCAG 2.0/2.1/2.2 A and AA tags) | 0 violations on all 8 pages at desktop and Pixel 7 sizes, plus the onboarding dialog |
-| `next build` | success; every route dynamic (required for the CSP nonce) |
+| Suite                                                  | Result                                                                                                         |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| Prettier, ESLint (type-aware), Knip, TypeScript        | all clean; 0 lint suppressions in source                                                                       |
+| Vitest                                                 | **19 files, 245 tests passed**                                                                                 |
+| Coverage (all source)                                  | 92.7 % statements · 81.6 % branches · 89.9 % functions · 94.3 % lines (thresholds 90 / 78 / 85 / 90, enforced) |
+| Coverage (`lib/engine`, `lib/engine/plan`)             | 98.4 % / 96.4 % statements · 99.0 % / 97.5 % lines                                                             |
+| Playwright, Chromium desktop + mobile                  | **35 passed** (the mobile-only test is skipped on the desktop project)                                         |
+| Playwright, Firefox                                    | **16 passed** (all functional flows)                                                                           |
+| Playwright `--repeat-each=2`, all three local projects | **102 passed**, 0 flaky                                                                                        |
+| Playwright, WebKit                                     | runs in CI, where Playwright installs WebKit's system libraries                                                |
+| axe-core (WCAG 2.0/2.1/2.2 A and AA tags)              | 0 violations on all 8 pages at desktop and Pixel 7 sizes, plus the onboarding dialog                           |
+| `next build`                                           | success; every route dynamic (required for the CSP nonce)                                                      |
 
 ## What is tested
 
 ### Unit (`tests/unit`)
+
 - **Indices:** US and EU band edges, PM2.5 breakpoints, `assessConcern` priority, null handling.
 - **Formatting and time:** units, "Not available" for missing data, WHO ratio, offset round-trips (+05:30, −05:00), 12/24-hour clocks, Today/Tomorrow across the year boundary, data age.
 - **Outdoor window:** cleanest hour, never "safe", all-poor → avoid, exertion and sensitivity matrix, realistic hours, past hours excluded, missing ≠ clean, insufficient data, uncertainty flag, hourly PM2.5 preferred over the lagging 24-hour AQI, "Tomorrow" labels.
@@ -41,6 +45,7 @@ npm run test:e2e      # builds, starts `next start` on :3200, runs Playwright
 - **Security and storage:** rate limiter, client key, CSP, storage validation and clearing, demo fixture labelling, Gemini config sanitising.
 
 ### Integration (`tests/integration`)
+
 - **Open-Meteo:** URL parameters, explicit domains, normalization of a **real captured Delhi response**, malformed payloads, null/negative/string values, missing variables, 429/500/network/abort/non-JSON, and the European → global fallback.
 - **Geocoding:** a real captured Pune response, malformed results, HTTP and network errors, coordinate rounding.
 - **`/api/assistant`:** success; 503 without a key; 415, 400 and 413; invalid model JSON or schema → 502; ungrounded claims → 502; timeout → 504; no leakage; unknown fields stripped; rate limit → 429.
@@ -48,9 +53,11 @@ npm run test:e2e      # builds, starts `next start` on :3200, runs Playwright
 - **Browser client:** validated success, client-side rejection, typed errors, network failure, abort.
 
 ### Component (React Testing Library)
+
 Commute calculator (worked example, accessible errors, focus management), chart (text summary as accessible name, data table toggle), city combobox (debounce, keyboard selection, persistence, no-results announcement), assistant fallback mode and input validation, indoor checklist persistence, safe rendering of hostile text.
 
 ### End-to-end (Playwright, production build)
+
 The browser clock is pinned to the fixture time and Open-Meteo and Gemini are mocked with `page.route`.
 
 1. First visit: onboarding dialog (Escape closes) and empty state.
@@ -70,18 +77,18 @@ The browser clock is pinned to the fixture time and Open-Meteo and Gemini are mo
 
 ## Lighthouse (real measurements)
 
-Lighthouse 12, default mobile emulation with simulated throttling, against `next start` on localhost. The home page has no saved location (first-visit state).
+Lighthouse 12, default mobile emulation with simulated throttling, against `next start` on localhost. The home page has no saved location (first-visit state). Measured after the code-quality refactor (2026-11-18); earlier numbers in parentheses.
 
-| Page | Performance | Accessibility | Best Practices | SEO | FCP | LCP | TBT | CLS |
-|---|---|---|---|---|---|---|---|---|
-| `/` (2 runs) | 93 / 92 | 100 | 100 | 100 | 0.8 s | 2.6 s / 2.2 s | 240 / 320 ms | 0 |
-| `/commute` | 91 | 100 | 100 | 100 | 0.8 s | 2.8 s | 250 ms | 0 |
-| `/assistant` | 91 | 100 | 100 | 100 | 0.8 s | 3.0 s | 210 ms | 0 |
+| Page                  | Performance  | Accessibility | Best Practices | SEO | LCP           | TBT                 | CLS |
+| --------------------- | ------------ | ------------- | -------------- | --- | ------------- | ------------------- | --- |
+| `/`                   | 94 (93 / 92) | 100           | 100            | 100 | 3.0 s         | 80 ms (240–320 ms)  | 0   |
+| `/commute`            | 96 (91)      | 100           | 100            | 100 | 2.8 s         | 40 ms (250 ms)      | 0   |
+| `/assistant` (2 runs) | 95 / 99 (91) | 100           | 100            | 100 | 2.9 s / 2.3 s | 80 / 60 ms (210 ms) | 0   |
 
 Scores vary between runs and machines; these are the actual numbers from this machine.
 
 ## Not covered by automation
 
-- Real Gemini output quality, since no API key was available during development. The integration is verified against the SDK's types and with mocks; run one manual question after setting `GEMINI_API_KEY`.
+- Real Gemini output quality. The integration is verified with mocks in CI, and manually on the live site: 8 of 8 test questions were answered by `gemini-3.5-flash-lite` in 2.4–3.5 s, grounded in the live data.
 - Real screen readers (NVDA, VoiceOver). The code follows ARIA patterns and passes axe, but a manual screen-reader pass is recommended.
-- Browsers other than Chromium.
+- WebKit locally (it runs in CI).

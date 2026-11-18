@@ -51,9 +51,19 @@ describe("PM2.5 concentration bands (EPA 2024 breakpoints)", () => {
 
 describe("assessConcern", () => {
   it("prefers US AQI, then European AQI, then PM2.5", () => {
-    expect(assessConcern({ us_aqi: 152, european_aqi: 10, pm2_5: 1 })).toMatchObject({ basis: "US AQI", level: 3, standardLabel: "Unhealthy" });
-    expect(assessConcern({ us_aqi: null, european_aqi: 78, pm2_5: 1 })).toMatchObject({ basis: "European AQI", level: 3 });
-    expect(assessConcern({ us_aqi: null, european_aqi: null, pm2_5: 40 })).toMatchObject({ basis: "PM2.5 concentration", level: 2 });
+    expect(assessConcern({ us_aqi: 152, european_aqi: 10, pm2_5: 1 })).toMatchObject({
+      basis: "US AQI",
+      level: 3,
+      standardLabel: "Unhealthy",
+    });
+    expect(assessConcern({ us_aqi: null, european_aqi: 78, pm2_5: 1 })).toMatchObject({
+      basis: "European AQI",
+      level: 3,
+    });
+    expect(assessConcern({ us_aqi: null, european_aqi: null, pm2_5: 40 })).toMatchObject({
+      basis: "PM2.5 concentration",
+      level: 2,
+    });
   });
 
   it("returns null when nothing is available (never treats missing as zero)", () => {

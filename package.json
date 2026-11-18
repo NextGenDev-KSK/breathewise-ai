@@ -12,12 +12,15 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
+    "lint:unused": "knip",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "verify": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "verify": "npm run format:check && npm run lint && npm run lint:unused && npm run typecheck && npm run test && npm run build",
     "repo:size": "node scripts/repo-size.mjs"
   },
   "dependencies": {
@@ -44,6 +47,10 @@
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.4.6",
     "jsdom": "^31.0.1",
+    "knip": "^5.88.1",
+    "postcss": "^8.5.33",
+    "prettier": "^3.10.1",
+    "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^4.3.5",
     "typescript": "^5.9.3",
     "vitest": "^5.1.0"

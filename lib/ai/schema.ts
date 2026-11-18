@@ -1,21 +1,39 @@
 import { z } from "zod";
 
+/** Length limits for every field of an answer; shared by validation and by the rule-based fallback. */
+export const RESPONSE_LIMITS = {
+  summary: 700,
+  riskContext: 700,
+  action: 200,
+  why: 400,
+  when: 120,
+  timing: 400,
+  indoorItem: 300,
+  commute: 400,
+  impact: 400,
+  uncertainty: 300,
+  disclaimer: 400,
+  /** Maximum items in each list field. */
+  listItems: 5,
+} as const;
+
 const text = (max: number) => z.string().trim().min(1).max(max);
+const L = RESPONSE_LIMITS;
 
 /** The structured answer the assistant must return. Validated on server AND client. */
 export const AssistantResponseSchema = z.object({
-  summary: text(700),
-  risk_context: text(700),
+  summary: text(L.summary),
+  risk_context: text(L.riskContext),
   top_actions: z
-    .array(z.object({ action: text(200), why: text(400), when: text(120) }))
+    .array(z.object({ action: text(L.action), why: text(L.why), when: text(L.when) }))
     .min(1)
-    .max(5),
-  timing: text(400),
-  indoor_recommendations: z.array(text(300)).max(5),
-  commute_recommendation: text(400),
-  environmental_impact: text(400),
-  uncertainties: z.array(text(300)).min(1).max(5),
-  disclaimer: text(400),
+    .max(L.listItems),
+  timing: text(L.timing),
+  indoor_recommendations: z.array(text(L.indoorItem)).max(L.listItems),
+  commute_recommendation: text(L.commute),
+  environmental_impact: text(L.impact),
+  uncertainties: z.array(text(L.uncertainty)).min(1).max(L.listItems),
+  disclaimer: text(L.disclaimer),
 });
 export type AssistantResponse = z.infer<typeof AssistantResponseSchema>;
 
@@ -24,7 +42,10 @@ export const ASSISTANT_RESPONSE_JSON_SCHEMA = {
   type: "object",
   properties: {
     summary: { type: "string", description: "Direct answer to the question in 1–3 sentences." },
-    risk_context: { type: "string", description: "What the supplied data says about current outdoor air, citing the supplied values only." },
+    risk_context: {
+      type: "string",
+      description: "What the supplied data says about current outdoor air, citing the supplied values only.",
+    },
     top_actions: {
       type: "array",
       minItems: 1,
@@ -42,7 +63,10 @@ export const ASSISTANT_RESPONSE_JSON_SCHEMA = {
     timing: { type: "string" },
     indoor_recommendations: { type: "array", maxItems: 5, items: { type: "string" } },
     commute_recommendation: { type: "string" },
-    environmental_impact: { type: "string", description: "Qualitative; greenhouse-gas effects kept separate from local air pollution." },
+    environmental_impact: {
+      type: "string",
+      description: "Qualitative; greenhouse-gas effects kept separate from local air pollution.",
+    },
     uncertainties: { type: "array", minItems: 1, maxItems: 5, items: { type: "string" } },
     disclaimer: { type: "string" },
   },
@@ -72,7 +96,11 @@ export const AssistantContextSchema = z.object({
   dataOrigin: z.enum(["live", "cache", "demo"]),
   observedAt: localTime,
   timezone: shortText(64),
-  model: z.object({ name: shortText(120), spatialResolution: shortText(80), temporalResolution: shortText(80) }),
+  model: z.object({
+    name: shortText(120),
+    spatialResolution: shortText(80),
+    temporalResolution: shortText(80),
+  }),
   current: z.object({
     pm2_5: value,
     pm10: value,
@@ -83,10 +111,26 @@ export const AssistantContextSchema = z.object({
     us_aqi: value,
     european_aqi: value,
   }),
-  concern: z.object({ level: z.number().int().min(0).max(5), value: z.number().finite().min(0).max(100_000), label: shortText(40), basis: shortText(40), standardLabel: shortText(60) }).nullable(),
+  concern: z
+    .object({
+      level: z.number().int().min(0).max(5),
+      value: z.number().finite().min(0).max(100_000),
+      label: shortText(40),
+      basis: shortText(40),
+      standardLabel: shortText(60),
+    })
+    .nullable(),
   dominantPollutant: shortText(20).nullable(),
   next24h: z.array(z.object({ time: localTime, pm2_5: value, us_aqi: value })).max(30),
-  outdoorWindow: z.object({ activity: shortText(40), start: localTime, end: localTime, verdict: shortText(20), levelLabel: shortText(20) }).nullable(),
+  outdoorWindow: z
+    .object({
+      activity: shortText(40),
+      start: localTime,
+      end: localTime,
+      verdict: shortText(20),
+      levelLabel: shortText(20),
+    })
+    .nullable(),
   preferences: z.object({
     commuteMode: shortText(20),
     outdoorActivity: shortText(20),
@@ -108,7 +152,11 @@ export const MAX_MESSAGE_LENGTH = 600;
 export const MAX_HISTORY = 6;
 
 export const AssistantRequestSchema = z.object({
-  message: z.string().trim().min(1, "Please enter a question.").max(MAX_MESSAGE_LENGTH, `Questions are limited to ${MAX_MESSAGE_LENGTH} characters.`),
+  message: z
+    .string()
+    .trim()
+    .min(1, "Please enter a question.")
+    .max(MAX_MESSAGE_LENGTH, `Questions are limited to ${MAX_MESSAGE_LENGTH} characters.`),
   history: z
     .array(z.object({ role: z.enum(["user", "assistant"]), text: z.string().max(1200) }))
     .max(MAX_HISTORY)
@@ -127,6 +175,7 @@ export type AssistantApiSuccess = z.infer<typeof AssistantApiSuccessSchema>;
 
 export const ASSISTANT_ERROR_CODES = [
   "invalid_request",
+  "forbidden_origin",
   "payload_too_large",
   "unsupported_media_type",
   "rate_limited",

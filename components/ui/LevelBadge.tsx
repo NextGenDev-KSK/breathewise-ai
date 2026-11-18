@@ -13,15 +13,36 @@ export const LEVEL_CLASSES: Record<ConcernLevel | "na", { bg: string; fg: string
 };
 
 /** Level marks also differ in shape (filled squares count), so colour is never the only cue. */
-export function LevelBadge({ level, label, className }: { level: ConcernLevel | null; label?: string; className?: string }) {
+export function LevelBadge({
+  level,
+  label,
+  className,
+}: {
+  level: ConcernLevel | null;
+  label?: string;
+  className?: string;
+}) {
   const key = level ?? "na";
   const c = LEVEL_CLASSES[key];
   const text = label ?? (level === null ? "Unknown" : CONCERN_LABELS[level]);
   return (
-    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold", c.bg, c.fg, className)}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold",
+        c.bg,
+        c.fg,
+        className,
+      )}
+    >
       <span aria-hidden="true" className="flex gap-0.5">
         {Array.from({ length: 3 }, (_, i) => (
-          <span key={i} className={cn("h-2 w-1 rounded-sm", level !== null && i < Math.ceil((level + 1) / 2) ? c.mark : "bg-current opacity-20")} />
+          <span
+            key={i}
+            className={cn(
+              "h-2 w-1 rounded-sm",
+              level !== null && i < Math.ceil((level + 1) / 2) ? c.mark : "bg-current opacity-20",
+            )}
+          />
         ))}
       </span>
       {text}

@@ -1,5 +1,5 @@
 /** Origins the browser may contact. Air-quality data is fetched client-side from Open-Meteo. */
-export const OPEN_METEO_ORIGINS = [
+const OPEN_METEO_ORIGINS = [
   "https://air-quality-api.open-meteo.com",
   "https://geocoding-api.open-meteo.com",
 ] as const;

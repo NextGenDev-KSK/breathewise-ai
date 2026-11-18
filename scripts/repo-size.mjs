@@ -24,7 +24,12 @@ console.log("Largest files:");
 for (const [s, f] of sizes.slice(0, 8)) console.log(`  ${(s / 1024).toFixed(1).padStart(8)} KB  ${f}`);
 try {
   const pack = execFileSync("git", ["count-objects", "-vH"], { encoding: "utf8" });
-  console.log(pack.split("\n").filter((l) => /size-pack|size:/.test(l)).join("\n"));
+  console.log(
+    pack
+      .split("\n")
+      .filter((l) => /size-pack|size:/.test(l))
+      .join("\n"),
+  );
 } catch {
   /* not critical */
 }

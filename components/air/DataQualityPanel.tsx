@@ -27,24 +27,41 @@ export function DataQualityPanel({ snapshot }: { snapshot: AirQualitySnapshot })
 
   const rows: [string, string][] = [
     ["Provider", snapshot.model.provider],
-    ["Data type", snapshot.origin === "demo" ? "Sample fixture for demonstration" : "Model estimate and forecast (not a station measurement)"],
+    [
+      "Data type",
+      snapshot.origin === "demo"
+        ? "Sample fixture for demonstration"
+        : "Model estimate and forecast (not a station measurement)",
+    ],
     ["Model", snapshot.model.name],
     ["Resolution", `${snapshot.model.spatialResolution}; ${snapshot.model.temporalResolution}`],
-    ["Reading time", `${formatDay(snapshot.current.time)}, ${formatTime(snapshot.current.time)} local (${formatAge(snapshot.current.epochMs, nowMs)})`],
+    [
+      "Reading time",
+      `${formatDay(snapshot.current.time)}, ${formatTime(snapshot.current.time)} local (${formatAge(snapshot.current.epochMs, nowMs)})`,
+    ],
     ["Model updates", snapshot.model.updateFrequency],
     ["Availability", `${available} of ${total} pollutants now; ${forecastHours} forecast hours ahead`],
   ];
 
   const limitations = [
     "Grid-cell averages: conditions on your street, near traffic or indoors can be quite different.",
-    snapshot.model.id === "cams_global" ? "The global model works in 3-hour steps; values between are interpolated." : null,
-    isIndianLocation(snapshot) ? "Not India's CPCB National AQI. Check official station readings for regulatory values." : null,
+    snapshot.model.id === "cams_global"
+      ? "The global model works in 3-hour steps; values between are interpolated."
+      : null,
+    isIndianLocation(snapshot)
+      ? "Not India's CPCB National AQI. Check official station readings for regulatory values."
+      : null,
     "Forecast accuracy decreases further ahead.",
   ].filter((x): x is string => x !== null);
 
   return (
     <Card>
-      <CardHeader icon={<Database className="size-4" />} title="Data confidence" description="Where these numbers come from and how far to trust them." action={<Badge tone={status.tone}>{status.text}</Badge>} />
+      <CardHeader
+        icon={<Database className="size-4" />}
+        title="Data confidence"
+        description="Where these numbers come from and how far to trust them."
+        action={<Badge tone={status.tone}>{status.text}</Badge>}
+      />
       <div className="grid gap-6 p-5 md:grid-cols-2">
         <dl className="space-y-2.5 text-sm">
           {rows.map(([k, v]) => (
@@ -55,8 +72,8 @@ export function DataQualityPanel({ snapshot }: { snapshot: AirQualitySnapshot })
           ))}
         </dl>
         <div>
-          <h3 className="text-sm font-semibold text-ink">Known limitations</h3>
-          <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm text-ink-2">
+          <h3 className="text-ink text-sm font-semibold">Known limitations</h3>
+          <ul className="text-ink-2 mt-2 list-disc space-y-1.5 pl-5 text-sm">
             {limitations.map((l) => (
               <li key={l}>{l}</li>
             ))}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { decideVerdict, findOutdoorWindow } from "@/lib/engine/windows";
+import { decideVerdict } from "@/lib/engine/activities";
+import { findOutdoorWindow } from "@/lib/engine/windows";
 import { makeSnapshot } from "../fixtures/builders";
 
 const noHousehold = { children: false, olderAdults: false, respiratorySensitivity: false };
@@ -52,7 +53,12 @@ describe("findOutdoorWindow", () => {
     const { snapshot, nowMs } = makeSnapshot({ pm25: pm, nowLocal: "2026-11-17T00:00" });
     const r = findOutdoorWindow(snapshot, { activity: "walking", household: noHousehold, nowMs });
     expect(r.best?.startTime).toBe("2026-11-17T09:00"); // 02:00 is outside walking hours
-    const evening = findOutdoorWindow(snapshot, { activity: "walking", household: noHousehold, nowMs, hourRange: { start: 17, end: 22 } });
+    const evening = findOutdoorWindow(snapshot, {
+      activity: "walking",
+      household: noHousehold,
+      nowMs,
+      hourRange: { start: 17, end: 22 },
+    });
     expect(Number(evening.best?.startTime.slice(11, 13))).toBeGreaterThanOrEqual(17);
   });
 
@@ -71,7 +77,11 @@ describe("findOutdoorWindow", () => {
   });
 
   it("reports insufficient data instead of guessing", () => {
-    const { snapshot, nowMs } = makeSnapshot({ pm25: Array(24).fill(null), usAqi: Array(24).fill(null), nowLocal: "2026-11-17T06:00" });
+    const { snapshot, nowMs } = makeSnapshot({
+      pm25: Array(24).fill(null),
+      usAqi: Array(24).fill(null),
+      nowLocal: "2026-11-17T06:00",
+    });
     snapshot.hourly.forEach((h) => (h.european_aqi = null));
     const r = findOutdoorWindow(snapshot, { activity: "walking", household: noHousehold, nowMs });
     expect(r.status).toBe("insufficient-data");
@@ -90,7 +100,12 @@ describe("findOutdoorWindow", () => {
   it("formats times with the injected formatter", () => {
     const pm = Array.from({ length: 24 }, (_, h) => (h === 15 ? 10 : 40));
     const { snapshot, nowMs } = makeSnapshot({ pm25: pm, nowLocal: "2026-11-17T06:00" });
-    const r = findOutdoorWindow(snapshot, { activity: "walking", household: noHousehold, nowMs, formatTime: () => "X" });
+    const r = findOutdoorWindow(snapshot, {
+      activity: "walking",
+      household: noHousehold,
+      nowMs,
+      formatTime: () => "X",
+    });
     expect(r.headline).toBe("Comparatively better window: X–X");
   });
 });

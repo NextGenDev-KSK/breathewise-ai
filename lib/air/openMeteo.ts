@@ -1,42 +1,44 @@
 import { z } from "zod";
+import { recordFromKeys } from "@/lib/collections";
 import {
   POLLUTANT_KEYS,
   US_SUBINDEX_POLLUTANTS,
   type AirQualitySnapshot,
   type HourlyPoint,
   type Place,
-  type PollutantKey,
-  type UsSubIndexPollutant,
 } from "@/types/air";
 import { AIR_MODELS, selectModelForLocation } from "@/lib/air/models";
 import { isLocalTimeString, localTimeToEpoch } from "@/lib/time";
 
-export const AIR_QUALITY_ENDPOINT = "https://air-quality-api.open-meteo.com/v1/air-quality";
+const AIR_QUALITY_ENDPOINT = "https://air-quality-api.open-meteo.com/v1/air-quality";
 
 /** Only the variables the app actually uses are requested. */
-export const CURRENT_VARIABLES = [
+const CURRENT_VARIABLES = [
   ...POLLUTANT_KEYS,
   "us_aqi",
   "european_aqi",
   ...US_SUBINDEX_POLLUTANTS.map((p) => `us_aqi_${p}`),
 ] as const;
-export const HOURLY_VARIABLES = ["pm2_5", "pm10", "nitrogen_dioxide", "ozone", "us_aqi", "european_aqi"] as const;
-export const FORECAST_DAYS = 4;
+const HOURLY_VARIABLES = ["pm2_5", "pm10", "nitrogen_dioxide", "ozone", "us_aqi", "european_aqi"] as const;
+const FORECAST_DAYS = 4;
 
 const num = z.number().finite().nullable().optional();
 
 const RawAirQualitySchema = z.object({
   latitude: z.number(),
   longitude: z.number(),
-  utc_offset_seconds: z.number().int().min(-14 * 3600).max(14 * 3600),
+  utc_offset_seconds: z
+    .number()
+    .int()
+    .min(-14 * 3600)
+    .max(14 * 3600),
   timezone: z.string().min(1).max(64),
   timezone_abbreviation: z.string().max(16).optional().default(""),
-  current: z.record(z.string(), z.union([z.string(), z.number(), z.null()])).and(z.object({ time: z.string() })),
-  hourly: z
-    .object({ time: z.array(z.string()) })
-    .catchall(z.array(num.transform((v) => v ?? null))),
+  current: z
+    .record(z.string(), z.union([z.string(), z.number(), z.null()]))
+    .and(z.object({ time: z.string() })),
+  hourly: z.object({ time: z.array(z.string()) }).catchall(z.array(num.transform((v) => v ?? null))),
 });
-export type RawAirQuality = z.infer<typeof RawAirQualitySchema>;
 
 export class AirQualityError extends Error {
   constructor(
@@ -48,7 +50,10 @@ export class AirQualityError extends Error {
   }
 }
 
-export function buildAirQualityUrl(place: Pick<Place, "latitude" | "longitude">, domain = selectModelForLocation(place.latitude, place.longitude)): string {
+export function buildAirQualityUrl(
+  place: Pick<Place, "latitude" | "longitude">,
+  domain = selectModelForLocation(place.latitude, place.longitude),
+): string {
   const params = new URLSearchParams({
     latitude: place.latitude.toFixed(4),
     longitude: place.longitude.toFixed(4),
@@ -76,7 +81,8 @@ export function normalizeAirQuality(
   fetchedAt: number,
 ): AirQualitySnapshot {
   const parsed = RawAirQualitySchema.safeParse(raw);
-  if (!parsed.success) throw new AirQualityError("The air-quality service returned an unexpected format.", "invalid-response");
+  if (!parsed.success)
+    throw new AirQualityError("The air-quality service returned an unexpected format.", "invalid-response");
   const data = parsed.data;
   const offset = data.utc_offset_seconds;
 
@@ -84,12 +90,10 @@ export function normalizeAirQuality(
     throw new AirQualityError("The air-quality service returned an invalid timestamp.", "invalid-response");
   }
 
-  const pollutants = Object.fromEntries(POLLUTANT_KEYS.map((k) => [k, readNumber(data.current[k])])) as Record<PollutantKey, number | null>;
-  const usSubIndices = Object.fromEntries(
-    US_SUBINDEX_POLLUTANTS.map((k) => [k, readNumber(data.current[`us_aqi_${k}`])]),
-  ) as Record<UsSubIndexPollutant, number | null>;
+  const pollutants = recordFromKeys(POLLUTANT_KEYS, (k) => readNumber(data.current[k]));
+  const usSubIndices = recordFromKeys(US_SUBINDEX_POLLUTANTS, (k) => readNumber(data.current[`us_aqi_${k}`]));
 
-  const series = (name: string): (number | null)[] => data.hourly[name] as (number | null)[] | undefined ?? [];
+  const series = (name: string): (number | null)[] => data.hourly[name] ?? [];
   const hourly: HourlyPoint[] = [];
   data.hourly.time.forEach((time, i) => {
     if (!isLocalTimeString(time)) return;
@@ -139,17 +143,30 @@ interface FetchOptions {
   now?: () => number;
 }
 
-async function requestDomain(place: Place, domain: "cams_global" | "cams_europe", opts: FetchOptions): Promise<AirQualitySnapshot> {
+async function requestDomain(
+  place: Place,
+  domain: "cams_global" | "cams_europe",
+  opts: FetchOptions,
+): Promise<AirQualitySnapshot> {
   const fetchImpl = opts.fetchImpl ?? fetch;
   let res: Response;
   try {
-    res = await fetchImpl(buildAirQualityUrl(place, domain), { signal: opts.signal, headers: { Accept: "application/json" } });
+    res = await fetchImpl(buildAirQualityUrl(place, domain), {
+      signal: opts.signal,
+      headers: { Accept: "application/json" },
+    });
   } catch (err) {
-    if (err instanceof DOMException && err.name === "AbortError") throw new AirQualityError("Request cancelled.", "aborted");
+    if (err instanceof DOMException && err.name === "AbortError")
+      throw new AirQualityError("Request cancelled.", "aborted");
     throw new AirQualityError("Could not reach the air-quality service. Check your connection.", "network");
   }
-  if (res.status === 429) throw new AirQualityError("The air-quality service is rate-limiting requests. Try again shortly.", "rate-limited");
-  if (!res.ok) throw new AirQualityError(`The air-quality service responded with status ${res.status}.`, "http");
+  if (res.status === 429)
+    throw new AirQualityError(
+      "The air-quality service is rate-limiting requests. Try again shortly.",
+      "rate-limited",
+    );
+  if (!res.ok)
+    throw new AirQualityError(`The air-quality service responded with status ${res.status}.`, "http");
   let body: unknown;
   try {
     body = await res.json();

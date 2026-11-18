@@ -7,7 +7,10 @@ export const metadata: Metadata = { title: "AI Clean-Air Assistant" };
 export default function AssistantPage() {
   return (
     <>
-      <PageHeader title="AI clean-air assistant" description="Questions answered with your local air-quality data, with reasons and uncertainties. It works without AI too, using the rule engine." />
+      <PageHeader
+        title="AI clean-air assistant"
+        description="Questions answered with your local air-quality data, with reasons and uncertainties. It works without AI too, using the rule engine."
+      />
       <AssistantChat />
     </>
   );

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { recordFromKeys } from "@/lib/collections";
 import { POLLUTANT_KEYS, US_SUBINDEX_POLLUTANTS } from "@/types/air";
 
 const n = z.number().finite().nullable();
@@ -24,10 +25,10 @@ export const SnapshotSchema = z.object({
   current: z.object({
     time: localTime,
     epochMs: z.number(),
-    pollutants: z.object(Object.fromEntries(POLLUTANT_KEYS.map((k) => [k, n])) as Record<(typeof POLLUTANT_KEYS)[number], typeof n>),
+    pollutants: z.object(recordFromKeys(POLLUTANT_KEYS, () => n)),
     usAqi: n,
     europeanAqi: n,
-    usSubIndices: z.object(Object.fromEntries(US_SUBINDEX_POLLUTANTS.map((k) => [k, n])) as Record<(typeof US_SUBINDEX_POLLUTANTS)[number], typeof n>),
+    usSubIndices: z.object(recordFromKeys(US_SUBINDEX_POLLUTANTS, () => n)),
   }),
   hourly: z
     .array(

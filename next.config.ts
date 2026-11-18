@@ -9,6 +9,10 @@ const securityHeaders = [
   // Geolocation is only usable by this origin, and only after the browser prompt.
   { key: "Permissions-Policy", value: "geolocation=(self), camera=(), microphone=(), payment=(), usb=()" },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
+  // Other sites may not embed or read our responses, and legacy cross-domain policy files are refused.
+  { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
+  { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
+  { key: "X-DNS-Prefetch-Control", value: "off" },
 ];
 
 const nextConfig: NextConfig = {

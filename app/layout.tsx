@@ -7,11 +7,17 @@ import { AppShell } from "@/components/app/AppShell";
 import { ToastProvider } from "@/components/ui/Toast";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
-const display = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta", weight: ["600", "700", "800"], display: "swap" });
+const display = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-jakarta",
+  weight: ["600", "700", "800"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: { default: "BreatheWise AI: Urban Air Quality Assistant", template: "%s · BreatheWise AI" },
-  description: "Understand the air. Make smarter choices. Breathe better. Explainable, location-aware clean-air guidance for urban households.",
+  description:
+    "Understand the air. Make smarter choices. Breathe better. Explainable, location-aware clean-air guidance for urban households.",
   applicationName: "BreatheWise AI",
   robots: { index: true, follow: true },
 };

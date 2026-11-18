@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildSeries, levelFor, summarizeDays } from "@/lib/air/series";
+import { buildSeries, summarizeDays } from "@/lib/air/series";
+import { concernLevelFor as levelFor } from "@/lib/air/indices";
 import { cacheKey, clearCache, getCached, setCached, CACHE_TTL_MS } from "@/lib/air/cache";
 import { makeSnapshot } from "../fixtures/builders";
 

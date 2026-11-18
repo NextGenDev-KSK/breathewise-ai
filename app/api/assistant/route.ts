@@ -9,6 +9,7 @@ import {
 } from "@/lib/ai/schema";
 import { findUnsupportedClaims, humanizeTimestamps } from "@/lib/ai/guard";
 import { GeminiError, generateAssistantJson, readGeminiConfig } from "@/lib/ai/gemini";
+import { isSameOriginRequest } from "@/lib/security/origin";
 import { clientKey, createRateLimiter } from "@/lib/security/rateLimit";
 
 export const runtime = "nodejs";
@@ -16,13 +17,13 @@ export const dynamic = "force-dynamic";
 /** Leaves headroom above the 30 s Gemini budget so the platform never cuts a request short. */
 export const maxDuration = 60;
 
-
 const limiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
 
 const NO_STORE = { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" };
 
 const MESSAGES: Record<AssistantErrorCode, string> = {
   invalid_request: "The request was not valid.",
+  forbidden_origin: "Requests must come from this site.",
   payload_too_large: "The request is too large.",
   unsupported_media_type: "Requests must be JSON.",
   rate_limited: "Too many questions in a short time. Please wait a moment.",
@@ -33,7 +34,12 @@ const MESSAGES: Record<AssistantErrorCode, string> = {
   ai_invalid_output: "The AI response did not pass validation, so it was discarded.",
 };
 
-function fail(code: AssistantErrorCode, status: number, extraHeaders: Record<string, string> = {}, message = MESSAGES[code]) {
+function fail(
+  code: AssistantErrorCode,
+  status: number,
+  extraHeaders: Record<string, string> = {},
+  message = MESSAGES[code],
+) {
   return NextResponse.json({ error: code, message }, { status, headers: { ...NO_STORE, ...extraHeaders } });
 }
 
@@ -64,6 +70,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  // Stops other websites from spending this deployment's AI quota through visitors' browsers.
+  if (!isSameOriginRequest(req.headers, req.url)) return fail("forbidden_origin", 403);
   const contentType = req.headers.get("content-type") ?? "";
   if (!contentType.toLowerCase().startsWith("application/json")) return fail("unsupported_media_type", 415);
 
@@ -83,7 +91,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     // Only the first issue's message is returned; never the input itself.
     const first = parsed.error.issues[0];
-    const message = first && first.path[0] === "message" ? first.message : MESSAGES.invalid_request;
+    const message = first?.path[0] === "message" ? first.message : MESSAGES.invalid_request;
     return fail("invalid_request", 400, {}, message);
   }
 
@@ -95,9 +103,13 @@ export async function POST(req: NextRequest) {
     text = await generateAssistantJson(parsed.data, config);
   } catch (err) {
     if (err instanceof GeminiError && err.kind === "timeout") return fail("ai_timeout", 504);
-    if (err instanceof GeminiError && err.kind === "rate-limited") return fail("ai_rate_limited", 503, { "Retry-After": "60" });
+    if (err instanceof GeminiError && err.kind === "rate-limited")
+      return fail("ai_rate_limited", 503, { "Retry-After": "60" });
     // Only the error kind and HTTP status are logged: upstream messages can contain request metadata.
-    console.error("assistant: upstream model error", err instanceof GeminiError ? `${err.kind} ${err.status ?? ""}`.trim() : "unknown");
+    console.error(
+      "assistant: upstream model error",
+      err instanceof GeminiError ? `${err.kind} ${err.status ?? ""}`.trim() : "unknown",
+    );
     return fail("ai_unavailable", 502);
   }
 

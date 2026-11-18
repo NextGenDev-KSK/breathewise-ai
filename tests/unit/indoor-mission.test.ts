@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { buildIndoorChecklist, getVentilationAdvice, recommendedCadr } from "@/lib/engine/indoor";
-import { daysBetween, missionDayIndex, missionProgress, newMission, toggleAction, todayIso, MissionStateSchema } from "@/lib/engine/mission";
+import {
+  daysBetween,
+  missionDayIndex,
+  missionProgress,
+  newMission,
+  toggleAction,
+  todayIso,
+  MissionStateSchema,
+} from "@/lib/engine/mission";
 import { makeSnapshot, prefs } from "../fixtures/builders";
 
 describe("getVentilationAdvice", () => {
@@ -27,11 +35,18 @@ describe("getVentilationAdvice", () => {
 
 describe("buildIndoorChecklist", () => {
   it("personalises by equipment, fuel and household", () => {
-    const ids = (p: ReturnType<typeof prefs>, level: 0 | 3) => buildIndoorChecklist(p, level).map((i) => i.id);
-    expect(ids(prefs({ equipment: { airPurifier: true, kitchenExhaust: true } }), 3)).toEqual(expect.arrayContaining(["pur-run", "pur-filter", "cook-exhaust", "vent-closed"]));
-    expect(ids(prefs(), 0)).toEqual(expect.arrayContaining(["pur-clean-room", "cook-ventilate", "vent-air-out"]));
+    const ids = (p: ReturnType<typeof prefs>, level: 0 | 3) =>
+      buildIndoorChecklist(p, level).map((i) => i.id);
+    expect(ids(prefs({ equipment: { airPurifier: true, kitchenExhaust: true } }), 3)).toEqual(
+      expect.arrayContaining(["pur-run", "pur-filter", "cook-exhaust", "vent-closed"]),
+    );
+    expect(ids(prefs(), 0)).toEqual(
+      expect.arrayContaining(["pur-clean-room", "cook-ventilate", "vent-air-out"]),
+    );
     expect(ids(prefs({ cookingFuel: "biomass" }), 0)).toContain("cook-biomass");
-    expect(ids(prefs({ household: { children: true, olderAdults: false, respiratorySensitivity: false } }), 0)).toContain("pur-bedroom");
+    expect(
+      ids(prefs({ household: { children: true, olderAdults: false, respiratorySensitivity: false } }), 0),
+    ).toContain("pur-bedroom");
   });
 
   it("never suggests plants as filtration or ozone generators", () => {

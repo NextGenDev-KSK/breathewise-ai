@@ -26,7 +26,9 @@ export function AirDataGate({ children }: { children: (snapshot: AirQualitySnaps
         title="Choose a location to begin"
         action={
           <>
-            <Button onClick={() => document.getElementById("location-search")?.focus()}>Search for a city</Button>
+            <Button onClick={() => document.getElementById("location-search")?.focus()}>
+              Search for a city
+            </Button>
             <Button variant="secondary" onClick={detect} disabled={locating}>
               {locating ? "Locating…" : "Use my location"}
             </Button>
@@ -36,7 +38,8 @@ export function AirDataGate({ children }: { children: (snapshot: AirQualitySnaps
           </>
         }
       >
-        BreatheWise uses your selected city to fetch modelled air-quality data and forecasts. No account is needed.
+        BreatheWise uses your selected city to fetch modelled air-quality data and forecasts. No account is
+        needed.
       </EmptyState>
     );
   }
@@ -49,10 +52,14 @@ export function AirDataGate({ children }: { children: (snapshot: AirQualitySnaps
   return (
     <>
       {s.origin === "cache" ? (
-        <div role="alert" className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-caution-200 bg-caution-50 px-4 py-3 text-sm text-caution-800">
+        <div
+          role="alert"
+          className="border-caution-200 bg-caution-50 text-caution-800 mb-5 flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3 text-sm"
+        >
           <TriangleAlert aria-hidden="true" className="size-4 shrink-0" />
           <p className="flex-1">
-            <strong>Showing a saved copy from {formatAge(s.fetchedAt, nowMs)}.</strong> {air.error} Timing advice may be out of date.
+            <strong>Showing a saved copy from {formatAge(s.fetchedAt, nowMs)}.</strong> {air.error} Timing
+            advice may be out of date.
           </p>
           <Button size="sm" variant="secondary" onClick={refresh}>
             Retry

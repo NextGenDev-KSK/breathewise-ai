@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDailyPlan, collectPeriods, periodOfHour } from "@/lib/engine/dailyPlan";
+import { buildDailyPlan, collectPeriods, periodOfHour } from "@/lib/engine/plan";
 import { DIURNAL, makeSnapshot, prefs } from "../fixtures/builders";
 
 describe("periodOfHour", () => {
@@ -34,16 +34,24 @@ describe("buildDailyPlan", () => {
   });
 
   it("only schedules the activity in the preferred period", () => {
-    const morning = buildDailyPlan(snapshot, prefs({ preferredActivityTime: "morning", outdoorActivity: "jogging" }), nowMs);
+    const morning = buildDailyPlan(
+      snapshot,
+      prefs({ preferredActivityTime: "morning", outdoorActivity: "jogging" }),
+      nowMs,
+    );
     expect(morning.periods[0]!.items.some((i) => i.id === "morning-activity")).toBe(true);
     expect(morning.periods[2]!.items.some((i) => i.id === "evening-activity")).toBe(false);
   });
 
   it("includes commute items only for commuters", () => {
     const home = buildDailyPlan(snapshot, prefs({ routine: "home" }), nowMs);
-    expect(home.periods.flatMap((p) => p.items).some((i) => i.category === "commute" && i.id.includes("commute-"))).toBe(false);
+    expect(
+      home.periods.flatMap((p) => p.items).some((i) => i.category === "commute" && i.id.includes("commute-")),
+    ).toBe(false);
     const office = buildDailyPlan(snapshot, prefs({ routine: "office", leaveTime: "09:00" }), nowMs);
-    expect(office.periods[0]!.items.find((i) => i.id === "morning-commute-out")?.recommendedTime).toBe("09:00");
+    expect(office.periods[0]!.items.find((i) => i.id === "morning-commute-out")?.recommendedTime).toBe(
+      "09:00",
+    );
   });
 
   it("every item carries timing, evidence or limitations for explainability", () => {
@@ -67,7 +75,11 @@ describe("buildDailyPlan", () => {
   });
 
   it("handles missing forecast data without inventing values", () => {
-    const empty = makeSnapshot({ pm25: Array(48).fill(null), usAqi: Array(48).fill(null), nowLocal: "2026-11-17T05:00" });
+    const empty = makeSnapshot({
+      pm25: Array(48).fill(null),
+      usAqi: Array(48).fill(null),
+      nowLocal: "2026-11-17T05:00",
+    });
     empty.snapshot.hourly.forEach((h) => (h.european_aqi = null));
     const plan = buildDailyPlan(empty.snapshot, prefs(), empty.nowMs);
     expect(plan.cleanestPeriod).toBeNull();
@@ -77,7 +89,16 @@ describe("buildDailyPlan", () => {
 
   it("groups night across midnight", () => {
     const groups = collectPeriods(snapshot, nowMs);
-    expect(groups.night.map((h) => h.time.slice(11, 13))).toEqual(["22", "23", "00", "01", "02", "03", "04", "05"]);
+    expect(groups.night.map((h) => h.time.slice(11, 13))).toEqual([
+      "22",
+      "23",
+      "00",
+      "01",
+      "02",
+      "03",
+      "04",
+      "05",
+    ]);
   });
 });
 

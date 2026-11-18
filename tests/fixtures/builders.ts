@@ -4,7 +4,7 @@ import { AIR_MODELS } from "@/lib/air/models";
 import { epochToLocalTime, localTimeToEpoch } from "@/lib/time";
 import delhiRaw from "./open-meteo-delhi.json";
 
-export const IST = 19_800;
+const IST = 19_800;
 export { delhiRaw };
 
 /** "Now" for the captured Delhi fixture: 2026-11-17 22:30 IST. */
@@ -21,7 +21,15 @@ export const DELHI: Place = {
   source: "search",
 };
 
-export const BERLIN: Place = { id: "geo-2950159", name: "Berlin", country: "Germany", countryCode: "DE", latitude: 52.52, longitude: 13.41, source: "search" };
+export const BERLIN: Place = {
+  id: "geo-2950159",
+  name: "Berlin",
+  country: "Germany",
+  countryCode: "DE",
+  latitude: 52.52,
+  longitude: 13.41,
+  source: "search",
+};
 
 export interface SyntheticOptions {
   /** Local start time of the hourly series, e.g. "2026-11-17T00:00". */
@@ -42,7 +50,16 @@ export function makeSnapshot(opts: SyntheticOptions): { snapshot: AirQualitySnap
   const hourly: HourlyPoint[] = opts.pm25.map((pm, i) => {
     const epochMs = startMs + i * 3_600_000;
     const us = opts.usAqi ? (opts.usAqi[i] ?? null) : pm === null ? null : Math.round(pm * 2);
-    return { time: epochToLocalTime(epochMs, IST), epochMs, pm2_5: pm, pm10: pm === null ? null : pm * 1.5, nitrogen_dioxide: 20, ozone: 30, us_aqi: us, european_aqi: pm === null ? null : Math.round(pm * 0.9) };
+    return {
+      time: epochToLocalTime(epochMs, IST),
+      epochMs,
+      pm2_5: pm,
+      pm10: pm === null ? null : pm * 1.5,
+      nitrogen_dioxide: 20,
+      ozone: 30,
+      us_aqi: us,
+      european_aqi: pm === null ? null : Math.round(pm * 0.9),
+    };
   });
   const nowLocal = opts.nowLocal ?? start;
   const nowMs = localTimeToEpoch(nowLocal, IST);
@@ -55,10 +72,26 @@ export function makeSnapshot(opts: SyntheticOptions): { snapshot: AirQualitySnap
     current: {
       time: cur.time,
       epochMs: cur.epochMs,
-      pollutants: { pm2_5: cur.pm2_5, pm10: cur.pm10, nitrogen_dioxide: 20, sulphur_dioxide: 5, carbon_monoxide: 400, ozone: 30, dust: 2, ammonia: null },
+      pollutants: {
+        pm2_5: cur.pm2_5,
+        pm10: cur.pm10,
+        nitrogen_dioxide: 20,
+        sulphur_dioxide: 5,
+        carbon_monoxide: 400,
+        ozone: 30,
+        dust: 2,
+        ammonia: null,
+      },
       usAqi: cur.us_aqi,
       europeanAqi: cur.european_aqi,
-      usSubIndices: { pm2_5: cur.us_aqi, pm10: 30, nitrogen_dioxide: 20, sulphur_dioxide: 5, carbon_monoxide: 5, ozone: 25 },
+      usSubIndices: {
+        pm2_5: cur.us_aqi,
+        pm10: 30,
+        nitrogen_dioxide: 20,
+        sulphur_dioxide: 5,
+        carbon_monoxide: 5,
+        ozone: 25,
+      },
     },
     hourly,
     model: AIR_MODELS[opts.model ?? "cams_global"],
@@ -69,9 +102,16 @@ export function makeSnapshot(opts: SyntheticOptions): { snapshot: AirQualitySnap
 }
 
 /** PM2.5 by local hour: polluted night/morning, cleanest early afternoon (min 22 at 14:00), rising evening. */
-const DAY = [120, 125, 130, 130, 128, 125, 118, 110, 95, 75, 55, 40, 30, 25, 22, 24, 35, 55, 75, 90, 100, 108, 112, 118];
+const DAY = [
+  120, 125, 130, 130, 128, 125, 118, 110, 95, 75, 55, 40, 30, 25, 22, 24, 35, 55, 75, 90, 100, 108, 112, 118,
+];
 export const DIURNAL = [...DAY, ...DAY];
 
 export function prefs(patch: Partial<Preferences> = {}): Preferences {
-  return { ...DEFAULT_PREFERENCES, ...patch, household: { ...DEFAULT_PREFERENCES.household, ...patch.household }, equipment: { ...DEFAULT_PREFERENCES.equipment, ...patch.equipment } };
+  return {
+    ...DEFAULT_PREFERENCES,
+    ...patch,
+    household: { ...DEFAULT_PREFERENCES.household, ...patch.household },
+    equipment: { ...DEFAULT_PREFERENCES.equipment, ...patch.equipment },
+  };
 }

@@ -12,7 +12,11 @@ const r1 = (v: number | null) => (v === null ? null : Math.round(v * 10) / 10);
  * Builds the minimal, validated context sent to the assistant endpoint.
  * Coordinates are never included; only a place label and readings.
  */
-export function buildAssistantContext(snapshot: AirQualitySnapshot, prefs: Preferences, nowMs: number): AssistantContext {
+export function buildAssistantContext(
+  snapshot: AirQualitySnapshot,
+  prefs: Preferences,
+  nowMs: number,
+): AssistantContext {
   const c = currentConcern(snapshot);
   const d = dominantPollutant(snapshot);
   const activity = prefs.outdoorActivity === "none" ? "walking" : prefs.outdoorActivity;
@@ -41,14 +45,28 @@ export function buildAssistantContext(snapshot: AirQualitySnapshot, prefs: Prefe
       us_aqi: snapshot.current.usAqi,
       european_aqi: snapshot.current.europeanAqi,
     },
-    concern: c ? { level: c.level, value: Math.round(c.value * 10) / 10, label: c.label, basis: c.basis, standardLabel: c.standardLabel } : null,
+    concern: c
+      ? {
+          level: c.level,
+          value: Math.round(c.value * 10) / 10,
+          label: c.label,
+          basis: c.basis,
+          standardLabel: c.standardLabel,
+        }
+      : null,
     dominantPollutant: d ? POLLUTANTS[d.key].shortLabel : null,
     next24h: upcomingHours(snapshot, nowMs, 24)
       .slice(0, 25)
       .map((h) => ({ time: h.time, pm2_5: r1(h.pm2_5), us_aqi: h.us_aqi })),
     outdoorWindow:
       w.status === "ok" && w.best
-        ? { activity: w.profile.label, start: w.best.startTime, end: w.best.endTime, verdict: w.verdict, levelLabel: w.best.levelLabel }
+        ? {
+            activity: w.profile.label,
+            start: w.best.startTime,
+            end: w.best.endTime,
+            verdict: w.verdict,
+            levelLabel: w.best.levelLabel,
+          }
         : null,
     preferences: {
       commuteMode: prefs.commuteMode,

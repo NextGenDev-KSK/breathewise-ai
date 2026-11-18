@@ -9,16 +9,16 @@
 
 ## Layers
 
-| Layer | Path | Responsibility |
-|---|---|---|
-| Routes | `app/*/page.tsx` | Server components: page heading and description, then one client feature component. |
-| API | `app/api/assistant/route.ts` | `GET` reports whether AI is configured (boolean only). `POST` validates, rate-limits, calls Gemini, validates output, and returns typed errors. |
-| Proxy | `proxy.ts`, `lib/security/csp.ts` | Generates a per-request nonce and a strict CSP. Pages render dynamically so Next.js can stamp the nonce. |
-| App state | `components/app/AppProvider.tsx` | Settings, preferences, place, air state, `refresh()`, `nowMs`, `formatTime`. Fetches with `AbortController` on every place change; uses the cache; falls back to the saved snapshot. |
-| Data | `lib/air/*` | URL building, Zod validation and normalization of Open-Meteo responses, index bands, pollutant metadata, geocoding, chart series and day summaries, in-memory TTL cache. |
-| Engine | `lib/engine/*` | `analysis` (concern, dominant pollutant, trend, staleness), `windows` (better outdoor window), `recommendations` (10 rules → prioritised `Recommendation[]`), `dailyPlan` (4 periods), `indoor` (ventilation, checklist, CADR), `emissions` (CO₂e), `mission` (7-day tracker). |
-| AI | `lib/ai/*` | Schemas (request, response, envelopes), context builder, prompt, grounding guard, Gemini wrapper (`server-only`), browser client, rule-based fallback. |
-| UI | `components/*` | Feature modules plus a small UI kit (Button, Card, Badge, LevelBadge, Dialog, Toast, States). |
+| Layer     | Path                                        | Responsibility                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| --------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Routes    | `app/*/page.tsx`                            | Server components: page heading and description, then one client feature component.                                                                                                                                                                                                                                                                                                                                                  |
+| API       | `app/api/assistant/route.ts`                | `GET` reports whether AI is configured (boolean only). `POST` validates, rate-limits, calls Gemini, validates output, and returns typed errors.                                                                                                                                                                                                                                                                                      |
+| Proxy     | `proxy.ts`, `lib/security/csp.ts`           | Generates a per-request nonce and a strict CSP. Pages render dynamically so Next.js can stamp the nonce.                                                                                                                                                                                                                                                                                                                             |
+| App state | `components/app/AppProvider.tsx`, `hooks/*` | Composes hooks: `useStoredState` (settings, preferences, place; `useSyncExternalStore` over a subscribable localStorage store, synced across tabs), `useAirQuality` (request-keyed loading with abort, cache, labelled saved copy, demo data), `useClock`, `useHydrated`. Exposes `refresh()`, `nowMs`, `formatTime`.                                                                                                                |
+| Data      | `lib/air/*`                                 | URL building, Zod validation and normalization of Open-Meteo responses, index bands, pollutant metadata, geocoding, chart series and day summaries, in-memory TTL cache.                                                                                                                                                                                                                                                             |
+| Engine    | `lib/engine/*`                              | Pure functions. `analysis` (concern, dominant pollutant, trend, staleness), `activities` (profiles and caution policy), `windows` (better outdoor window), `plan/` (periods, shared items, one builder per period), `recommendations/` (ten rules grouped by topic, shared `RuleContext`, stable priority sort), `indoor` and `checklist`, `emissions` (CO₂e and form parsing), `mission`, `provenance` (source labels, confidence). |
+| AI        | `lib/ai/*`                                  | Schemas (request, response, envelopes), context builder, prompt, grounding guard, Gemini wrapper (`server-only`), browser client, rule-based fallback.                                                                                                                                                                                                                                                                               |
+| UI        | `components/*`                              | Feature modules plus a small UI kit (Button, Card, Badge, LevelBadge, Dialog, Toast, States).                                                                                                                                                                                                                                                                                                                                        |
 
 ## Key contracts
 
@@ -41,11 +41,11 @@ Open-Meteo returns local wall-clock strings plus `utc_offset_seconds`. `lib/time
 
 ## Error handling
 
-| Failure | Behaviour |
-|---|---|
-| Open-Meteo network, HTTP or 429 error | Typed `AirQualityError` → saved copy (labelled) if one exists for that place, otherwise an error state with **Try again** |
-| Malformed or partial API data | Zod rejects structure; individual bad values become `null`, never 0 |
-| European model has no data for a point | Automatic retry with the global model |
-| Geolocation denied or unavailable | Toast with a suggestion to search |
-| Gemini not configured, timeout, upstream error, invalid JSON, schema failure, ungrounded claims | Typed API error → client uses the rule engine and explains why |
-| Unexpected render error | `app/error.tsx` boundary with retry |
+| Failure                                                                                         | Behaviour                                                                                                                 |
+| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Open-Meteo network, HTTP or 429 error                                                           | Typed `AirQualityError` → saved copy (labelled) if one exists for that place, otherwise an error state with **Try again** |
+| Malformed or partial API data                                                                   | Zod rejects structure; individual bad values become `null`, never 0                                                       |
+| European model has no data for a point                                                          | Automatic retry with the global model                                                                                     |
+| Geolocation denied or unavailable                                                               | Toast with a suggestion to search                                                                                         |
+| Gemini not configured, timeout, upstream error, invalid JSON, schema failure, ungrounded claims | Typed API error → client uses the rule engine and explains why                                                            |
+| Unexpected render error                                                                         | `app/error.tsx` boundary with retry                                                                                       |

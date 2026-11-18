@@ -23,7 +23,11 @@ export function createRateLimiter({ limit, windowMs, maxKeys = 5_000 }: RateLimi
     if (recent.length >= limit) {
       hits.set(key, recent);
       const oldest = recent[0] ?? now;
-      return { allowed: false, remaining: 0, retryAfterSeconds: Math.max(1, Math.ceil((oldest + windowMs - now) / 1000)) };
+      return {
+        allowed: false,
+        remaining: 0,
+        retryAfterSeconds: Math.max(1, Math.ceil((oldest + windowMs - now) / 1000)),
+      };
     }
     recent.push(now);
     hits.delete(key); // re-insert to keep Map order roughly LRU
@@ -40,6 +44,7 @@ export function createRateLimiter({ limit, windowMs, maxKeys = 5_000 }: RateLimi
 export function clientKey(headers: Headers): string {
   const forwarded = headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   const real = headers.get("x-real-ip")?.trim();
-  const key = forwarded || real || "unknown";
+  // Empty header values count as missing, so the first non-empty one wins.
+  const key = [forwarded, real].find((value) => value !== undefined && value !== "") ?? "unknown";
   return key.slice(0, 64);
 }

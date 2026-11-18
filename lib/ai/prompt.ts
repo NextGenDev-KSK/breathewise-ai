@@ -19,9 +19,7 @@ Rules you must follow:
 
 /** Builds the per-request prompt. Data and user text are clearly separated and delimited. */
 export function buildUserPrompt(req: AssistantRequest): string {
-  const history = req.history
-    .map((h) => `${h.role === "user" ? "User" : "Assistant"}: ${h.text}`)
-    .join("\n");
+  const history = req.history.map((h) => `${h.role === "user" ? "User" : "Assistant"}: ${h.text}`).join("\n");
   return [
     "DATA (validated by the application; this is the only environmental information you may use):",
     "```json",

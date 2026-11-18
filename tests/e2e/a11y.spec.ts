@@ -11,8 +11,12 @@ test.describe("automated accessibility audit (axe-core, WCAG 2.2 A/AA) @mobile",
       await page.goto(path);
       await page.waitForLoadState("networkidle");
       await expect(page.locator("main h1")).toBeVisible();
-      const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
-      const summary = results.violations.map((v) => `${v.id} (${v.impact}): ${v.nodes.length} node(s) – ${v.nodes[0]?.target.join(" ")}`);
+      const results = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+        .analyze();
+      const summary = results.violations.map(
+        (v) => `${v.id} (${v.impact}): ${v.nodes.length} node(s) – ${v.nodes[0]?.target.join(" ")}`,
+      );
       expect(summary, summary.join("\n")).toEqual([]);
     });
   }

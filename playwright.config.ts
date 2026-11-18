@@ -19,6 +19,9 @@ export default defineConfig({
   projects: [
     { name: "desktop-chromium", use: { ...devices["Desktop Chrome"] } },
     { name: "mobile-chromium", use: { ...devices["Pixel 7"] }, grep: /@mobile/ },
+    // Cross-browser runs of the functional flows (accessibility audits run in Chromium).
+    { name: "desktop-firefox", use: { ...devices["Desktop Firefox"] }, testIgnore: /a11y\.spec/ },
+    { name: "desktop-webkit", use: { ...devices["Desktop Safari"] }, testIgnore: /a11y\.spec/ },
   ],
   webServer: {
     command: `npm run build && npx next start -p ${PORT}`,

@@ -4,12 +4,12 @@
 
 **Open-Meteo Air Quality API** (`https://air-quality-api.open-meteo.com/v1/air-quality`), verified against the official documentation on 2026-11-17.
 
-| Model | Domain | Grid | Time step | Forecast | Updates |
-|---|---|---|---|---|---|
-| CAMS Global atmospheric composition | Worldwide (used for India) | 0.4° (~45 km) | 3-hourly (hourly values interpolated) | 5 days | every 12 h |
-| CAMS European air-quality ensemble | Europe | 0.1° (~11 km) | hourly | 4 days | daily |
+| Model                               | Domain                     | Grid          | Time step                             | Forecast | Updates    |
+| ----------------------------------- | -------------------------- | ------------- | ------------------------------------- | -------- | ---------- |
+| CAMS Global atmospheric composition | Worldwide (used for India) | 0.4° (~45 km) | 3-hourly (hourly values interpolated) | 5 days   | every 12 h |
+| CAMS European air-quality ensemble  | Europe                     | 0.1° (~11 km) | hourly                                | 4 days   | daily      |
 
-BreatheWise requests the domain explicitly (`cams_europe` inside 25°W–45°E, 30°N–72°N, otherwise `cams_global`) so the model shown in the *Data confidence* panel is the model actually used. If the European model returns no data for a point, the app retries with the global model.
+BreatheWise requests the domain explicitly (`cams_europe` inside 25°W–45°E, 30°N–72°N, otherwise `cams_global`) so the model shown in the _Data confidence_ panel is the model actually used. If the European model returns no data for a point, the app retries with the global model.
 
 **Requested variables.** Current: `pm2_5, pm10, nitrogen_dioxide, sulphur_dioxide, carbon_monoxide, ozone, dust, ammonia, us_aqi, european_aqi, us_aqi_pm2_5, us_aqi_pm10, us_aqi_nitrogen_dioxide, us_aqi_sulphur_dioxide, us_aqi_carbon_monoxide, us_aqi_ozone`. Hourly: `pm2_5, pm10, nitrogen_dioxide, ozone, us_aqi, european_aqi`. Also `forecast_days=4` and `timezone=auto`. All concentrations are in µg/m³.
 
@@ -22,13 +22,13 @@ BreatheWise requests the domain explicitly (`cams_europe` inside 25°W–45°E, 
 
 ## Indices
 
-| Standard | Bands used | Source of values |
-|---|---|---|
-| US AQI (US EPA) | 0–50 Good, 51–100 Moderate, 101–150 Unhealthy for Sensitive Groups, 151–200 Unhealthy, 201–300 Very Unhealthy, 301+ Hazardous | Calculated by Open-Meteo |
-| European AQI (EEA, 2024 bands) | 0–20 Good, 20–40 Fair, 40–60 Moderate, 60–80 Poor, 80–100 Very poor, >100 Extremely poor | Calculated by Open-Meteo |
-| **India National AQI (CPCB)** | **Not computed.** It needs station measurements and specific averaging periods. A notice links to official CPCB readings. | not applicable |
+| Standard                       | Bands used                                                                                                                    | Source of values         |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| US AQI (US EPA)                | 0–50 Good, 51–100 Moderate, 101–150 Unhealthy for Sensitive Groups, 151–200 Unhealthy, 201–300 Very Unhealthy, 301+ Hazardous | Calculated by Open-Meteo |
+| European AQI (EEA, 2024 bands) | 0–20 Good, 20–40 Fair, 40–60 Moderate, 60–80 Poor, 80–100 Very poor, >100 Extremely poor                                      | Calculated by Open-Meteo |
+| **India National AQI (CPCB)**  | **Not computed.** It needs station measurements and specific averaging periods. A notice links to official CPCB readings.     | not applicable           |
 
-**Concern level.** The engine uses a neutral 0–5 scale (*Low, Moderate, Elevated, High, Very high, Severe*) derived from US AQI when available, else European AQI, else PM2.5 concentration (US EPA 2024 PM2.5 breakpoints: 9 / 35.4 / 55.4 / 125.4 / 225.4 µg/m³). The UI always shows which basis was used, together with the standard's own category name.
+**Concern level.** The engine uses a neutral 0–5 scale (_Low, Moderate, Elevated, High, Very high, Severe_) derived from US AQI when available, else European AQI, else PM2.5 concentration (US EPA 2024 PM2.5 breakpoints: 9 / 35.4 / 55.4 / 125.4 / 225.4 µg/m³). The UI always shows which basis was used, together with the standard's own category name.
 
 **Dominant pollutant.** The pollutant with the highest US AQI sub-index (the EPA definition).
 
@@ -39,15 +39,15 @@ BreatheWise requests the domain explicitly (`cams_europe` inside 25°W–45°E, 
 1. Candidates are the next 24 hours, starting no earlier than now, within realistic hours for the activity (e.g. 05:00–22:00 for walking, 07:00–19:00 for children's play).
 2. **Ranking metric: hourly PM2.5 concentration.** Open-Meteo's US AQI for particles uses a 24-hour rolling average, which lags behind real changes and points to the wrong hour. A test covers this case. Indices are used only when PM2.5 is missing.
 3. The window with the lowest mean wins; ties go to the earliest. Hours with missing data are skipped, never treated as clean.
-4. The verdict depends on the concern level, the exertion (light, moderate or vigorous) and whether anyone sensitive is involved (children, older adults, respiratory sensitivity, or children's play). The outcomes are *reasonable*, *reduce* or *avoid*.
+4. The verdict depends on the concern level, the exertion (light, moderate or vigorous) and whether anyone sensitive is involved (children, older adults, respiratory sensitivity, or children's play). The outcomes are _reasonable_, _reduce_ or _avoid_.
 5. The wording is always "comparatively better". If even the best hour is concerning, the result says all hours are poor and suggests an indoor alternative.
 6. Uncertainty is flagged when more than 20 % of candidate hours are missing or fewer than 3 slots exist. A note explains the global model's 3-hour steps and that similar values mean timing matters little.
 
 ## Recommendation engine
 
-Ten rules (`lib/engine/recommendations.ts`) each return zero or more `Recommendation`s: outdoor timing, sensitive household, ventilation, purification, trend, dust, cooking, commute, dominant pollutant, and data freshness/CPCB. They are sorted by `priority` (1 = urgent), which combines urgency (concern level, sensitive members) with practicality.
+Ten rules (`lib/engine/recommendations/`, grouped by topic) each return zero or more `Recommendation`s: outdoor timing, sensitive household, ventilation, purification, trend, dust, cooking, commute, dominant pollutant, and data freshness/CPCB. They are sorted by `priority` (1 = urgent), which combines urgency (concern level, sensitive members) with practicality.
 
-**Confidence** is *high* for current European-model data, *medium* for current global-model data, and *low* for stale (more than 3 h old), cached or sample data, or for uncertain windows.
+**Confidence** is _high_ for current European-model data, _medium_ for current global-model data, and _low_ for stale (more than 3 h old), cached or sample data, or for uncertain windows.
 
 **Trend.** The next 3 hours are compared with hours 6–12 ahead; a change of ±20 % or more counts as improving or worsening.
 
@@ -61,7 +61,7 @@ The next occurrence of each period (morning 06–12, afternoon 12–17, evening 
 
 ## Commute emissions
 
-Life-cycle factors (g CO₂e per passenger-km) from *OECD (2023), Life-cycle assessment of passenger transport: an Indian case study*: car 162, two-wheeler 65, urban non-AC bus 28, metro 24, walking and cycling 0 (direct operational emissions only, in this simplified comparison).
+Life-cycle factors (g CO₂e per passenger-km) from _OECD (2023), Life-cycle assessment of passenger transport: an Indian case study_: car 162, two-wheeler 65, urban non-AC bus 28, metro 24, walking and cycling 0 (direct operational emissions only, in this simplified comparison).
 
 ```
 weekly kg  = factor × one-way km × trips per day × days per week ÷ 1000

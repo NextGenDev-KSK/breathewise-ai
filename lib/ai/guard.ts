@@ -54,13 +54,21 @@ export function humanizeTimestamps(response: AssistantResponse, localDate: strin
   const tomorrow = new Date(Date.parse(`${localDate}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
   const fix = (text: string) =>
     text.replace(RAW_TIMESTAMP, (_, day: string, time: string) =>
-      day === localDate ? `${time} today` : day === tomorrow ? `${time} tomorrow` : `${formatDay(`${day}T${time}`)}, ${time}`,
+      day === localDate
+        ? `${time} today`
+        : day === tomorrow
+          ? `${time} tomorrow`
+          : `${formatDay(`${day}T${time}`)}, ${time}`,
     );
   return {
     ...response,
     summary: fix(response.summary),
     risk_context: fix(response.risk_context),
-    top_actions: response.top_actions.map((a) => ({ action: fix(a.action), why: fix(a.why), when: fix(a.when) })),
+    top_actions: response.top_actions.map((a) => ({
+      action: fix(a.action),
+      why: fix(a.why),
+      when: fix(a.when),
+    })),
     timing: fix(response.timing),
     indoor_recommendations: response.indoor_recommendations.map(fix),
     commute_recommendation: fix(response.commute_recommendation),
@@ -93,11 +101,14 @@ export function findUnsupportedClaims(response: AssistantResponse, ctx: Assistan
     if (!isSupported(n, known)) issues.push(`unsupported concentration: ${m[0]}`);
   }
   // Numbers directly attached to an AQI mention ("AQI 152", "AQI of 152", "152 AQI").
-  for (const m of body.matchAll(/\bAQI(?:\s+(?:of|is|at|around|near|about))?\s*(\d{1,3})\b|\b(\d{1,3})\s*(?:US |European )?AQI\b/gi)) {
+  for (const m of body.matchAll(
+    /\bAQI(?:\s+(?:of|is|at|around|near|about))?\s*(\d{1,3})\b|\b(\d{1,3})\s*(?:US |European )?AQI\b/gi,
+  )) {
     const n = Number(m[1] ?? m[2]);
     if (!isSupported(n, known)) issues.push(`unsupported index value: ${m[0]}`);
   }
   // Quantified personal-benefit claims ("reduce exposure by 40%").
-  if (/\b(reduc\w*|cut\w*|lower\w*)\b[^.]{0,60}\bby\s+\d+(\.\d+)?\s*%/i.test(body)) issues.push("quantified benefit claim");
+  if (/\b(reduc\w*|cut\w*|lower\w*)\b[^.]{0,60}\bby\s+\d+(\.\d+)?\s*%/i.test(body))
+    issues.push("quantified benefit claim");
   return issues;
 }

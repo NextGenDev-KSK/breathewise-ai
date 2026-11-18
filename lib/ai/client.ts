@@ -1,8 +1,17 @@
-import { AssistantApiErrorSchema, AssistantApiSuccessSchema, type AssistantContext, type AssistantResponse } from "@/lib/ai/schema";
+import {
+  AssistantApiErrorSchema,
+  AssistantApiSuccessSchema,
+  type AssistantContext,
+  type AssistantErrorCode,
+  type AssistantResponse,
+} from "@/lib/ai/schema";
+
+/** Why an AI answer was not available: a server error code, or a client-side failure. */
+export type AskFailureCode = AssistantErrorCode | "network" | "unknown";
 
 export type AskResult =
   | { ok: true; response: AssistantResponse; model: string }
-  | { ok: false; reason: string; code: string };
+  | { ok: false; reason: string; code: AskFailureCode };
 
 /** Calls the server endpoint and re-validates the response before it can be rendered. */
 export async function askGemini(
@@ -31,7 +40,9 @@ export async function askGemini(
     return { ok: false, code: "ai_invalid_output", reason: "The AI response did not pass validation." };
   }
   const err = AssistantApiErrorSchema.safeParse(body);
-  return err.success ? { ok: false, code: err.data.error, reason: err.data.message } : { ok: false, code: "unknown", reason: `The assistant returned status ${res.status}.` };
+  return err.success
+    ? { ok: false, code: err.data.error, reason: err.data.message }
+    : { ok: false, code: "unknown", reason: `The assistant returned status ${res.status}.` };
 }
 
 export async function fetchAssistantStatus(signal?: AbortSignal): Promise<boolean> {

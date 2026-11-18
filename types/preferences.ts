@@ -3,7 +3,14 @@ import { z } from "zod";
 export const COMMUTE_MODES = ["car", "two_wheeler", "bus", "metro", "walk", "cycle"] as const;
 export type CommuteMode = (typeof COMMUTE_MODES)[number];
 
-export const ACTIVITIES = ["walking", "jogging", "cycling", "children_play", "commuting", "exercise"] as const;
+export const ACTIVITIES = [
+  "walking",
+  "jogging",
+  "cycling",
+  "children_play",
+  "commuting",
+  "exercise",
+] as const;
 export type Activity = (typeof ACTIVITIES)[number];
 
 const timeOfDay = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use HH:MM (24-hour) format");
