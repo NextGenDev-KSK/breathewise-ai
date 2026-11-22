@@ -26,7 +26,7 @@ Built for **Google PromptWars Virtual: Main Challenge 06, Urban Air Quality Assi
 
 ---
 
-How it was built (tools, prompt flow, what AI did and what the participant did): [docs/DEVELOPMENT-PROCESS.md](docs/DEVELOPMENT-PROCESS.md).
+How it was built (research, tools, prompt design and its evolution, testing, and how AI was used): [docs/DEVELOPMENT-PROCESS.md](docs/DEVELOPMENT-PROCESS.md).
 
 ## Contents
 
