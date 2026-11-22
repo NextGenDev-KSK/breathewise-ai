@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { generateRecommendations } from "@/lib/engine/recommendations";
+import type { Preferences } from "@/types/preferences";
 import { BERLIN, DIURNAL, makeSnapshot, prefs } from "@/tests/fixtures/builders";
 
 const REQUIRED = [
@@ -166,5 +167,34 @@ describe("generateRecommendations", () => {
     const text = JSON.stringify(recs);
     expect(text).not.toMatch(/\d+\s*%/);
     expect(text.toLowerCase()).not.toMatch(/guarantee|completely safe|risk-free/);
+  });
+});
+
+describe("commute alternatives (carpooling, open-air exposure)", () => {
+  const poorDay = makeSnapshot({ pm25: Array.from({ length: 48 }, () => 160), nowLocal: "2026-11-17T08:00" });
+  const commuteRec = (commuteMode: Preferences["commuteMode"]) =>
+    generateRecommendations({
+      snapshot: poorDay.snapshot,
+      preferences: prefs({ commuteMode }),
+      nowMs: poorDay.nowMs,
+    }).find((r) => r.category === "commute");
+
+  it("suggests carpooling to drivers with the per-person factor", () => {
+    const rec = commuteRec("car");
+    expect(rec?.title).toBe("Try public transport or carpooling for some car trips");
+    expect(rec?.description).toContain("cuts each person's share from ~162 to ~54 g CO₂e per km");
+    expect(rec?.evidence).toContain("Carpool (car shared by 3 people): ~54 g CO₂e/pkm");
+  });
+
+  it("gives two-wheeler riders exposure advice and mask guidance on high-pollution days", () => {
+    const rec = commuteRec("two_wheeler");
+    expect(rec).toMatchObject({ id: "commute-exposure", impactType: "exposure-reduction" });
+    expect(rec?.title).toBe("Ride at a cleaner hour or take enclosed transport today");
+    expect(rec?.caution).toMatch(/N95\/FFP2/);
+  });
+
+  it("has nothing to add for people who already carpool or take the metro", () => {
+    expect(commuteRec("carpool")).toBeUndefined();
+    expect(commuteRec("metro")).toBeUndefined();
   });
 });

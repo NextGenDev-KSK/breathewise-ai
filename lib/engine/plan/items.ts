@@ -3,7 +3,7 @@ import type { Activity, CommuteMode } from "@/types/preferences";
 import type { Recommendation } from "@/types/recommendation";
 import { assessConcern, type ConcernAssessment } from "@/lib/air/indices";
 import type { Verdict } from "@/lib/engine/activities";
-import { MODEL_LIMITATION, NO_INDOOR_SENSOR_NOTE } from "@/lib/content/notices";
+import { MASK_NOTE, MODEL_LIMITATION, NO_INDOOR_SENSOR_NOTE } from "@/lib/content/notices";
 import { describeMetricValue } from "@/lib/engine/analysis";
 import { EMISSION_FACTORS, EMISSION_SOURCE, isOpenAirMode } from "@/lib/engine/emissions";
 import { findOutdoorWindow, type OutdoorWindowResult } from "@/lib/engine/windows";
@@ -132,8 +132,7 @@ function forecastAtClock(
   return hour && concern ? { hour, concern } : null;
 }
 
-const MASK_NOTE =
-  "If you choose to wear a mask, a well-fitted N95/FFP2 respirator filters particles far better than cloth; it does not remove gases.";
+const CAR_AIR_TIP = " In the car, keep windows closed and use recirculation in heavy traffic.";
 
 /** What to say about this commute: exposure advice on bad hours for open-air modes, else emissions. */
 function commuteDescription(mode: CommuteMode, concern: ConcernAssessment | null, direction: "out" | "back") {
@@ -142,13 +141,16 @@ function commuteDescription(mode: CommuteMode, concern: ConcernAssessment | null
     const when = direction === "out" ? "departure" : "return";
     return `Air around your ${when} time is forecast to be ${concern.label.toLowerCase()}. If practical, take an enclosed bus or metro, or shift the trip toward a cleaner hour.`;
   }
+  const carTip = mode === "car" || mode === "carpool" ? CAR_AIR_TIP : "";
   if (mode === "car" || mode === "two_wheeler") {
-    const carTip =
-      mode === "car" ? " In the car, keep windows closed and use recirculation in heavy traffic." : "";
-    return `Where practical, a metro or bus trip has lower estimated emissions (${factor.label}: ~${factor.gramsPerPassengerKm} g CO₂e/pkm vs metro ~${EMISSION_FACTORS.metro.gramsPerPassengerKm}).${carTip}`;
+    const share =
+      mode === "car"
+        ? ` Sharing the car with two others cuts each person's share to ~${EMISSION_FACTORS.carpool.gramsPerPassengerKm} g.`
+        : "";
+    return `Where practical, a metro or bus trip has lower estimated emissions (${factor.label}: ~${factor.gramsPerPassengerKm} g CO₂e/pkm vs metro ~${EMISSION_FACTORS.metro.gramsPerPassengerKm}).${share}${carTip}`;
   }
   const watch = concern && concern.level >= 2 ? " Keep an eye on the forecast for this hour." : "";
-  return `Your ${factor.label.toLowerCase()} commute already has low estimated emissions.${watch}`;
+  return `Your ${factor.label.toLowerCase()} commute already has comparatively low estimated emissions.${watch}${carTip}`;
 }
 
 /** Reason, evidence, source and priority, which all depend on whether the commute hour has a forecast. */
@@ -172,6 +174,12 @@ function commuteBasis(ctx: PlanContext, forecast: Forecast | null) {
   };
 }
 
+function commuteTitle(student: boolean, direction: "out" | "back", clock: string): string {
+  if (student)
+    return direction === "out" ? `Leave for school or college at ${clock}` : `Head home at ${clock}`;
+  return direction === "out" ? `Commute out at ${clock}` : `Commute home at ${clock}`;
+}
+
 /** Advice for the commute that leaves (or returns) at the user's saved time. */
 export function commuteItem(
   ctx: PlanContext,
@@ -188,7 +196,7 @@ export function commuteItem(
   return makeItem(ctx, period.id, {
     key: `commute-${direction}`,
     category: "commute",
-    title: direction === "out" ? `Commute out at ${clock}` : `Commute home at ${clock}`,
+    title: commuteTitle(ctx.prefs.routine === "student", direction, clock),
     description: commuteDescription(mode, concern, direction),
     ...commuteBasis(ctx, forecast),
     recommendedTime: clock,

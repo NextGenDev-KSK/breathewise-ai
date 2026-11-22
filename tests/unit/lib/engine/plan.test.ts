@@ -111,3 +111,32 @@ describe("plan ordering", () => {
     expect(plan.periods[1]!.dayLabel).toBe("Tomorrow");
   });
 });
+
+describe("plan personalisation by routine and commute", () => {
+  const poor = makeSnapshot({ pm25: Array.from({ length: 48 }, () => 160), nowLocal: "2026-11-17T05:00" });
+  const items = (patch: Parameters<typeof prefs>[0]) =>
+    buildDailyPlan(poor.snapshot, prefs(patch), poor.nowMs).periods.flatMap((p) => p.items);
+
+  it("tells students whether outdoor games and PE suit the afternoon, and words their commute for school", () => {
+    const student = items({ routine: "student", commuteMode: "bus" });
+    expect(student.find((i) => i.id.includes("school-activity"))?.title).toBe(
+      "Ask for indoor games or PE today",
+    );
+    expect(student.some((i) => i.title.startsWith("Leave for school or college at"))).toBe(true);
+    expect(items({ routine: "office" }).some((i) => i.id.includes("school-activity"))).toBe(false);
+  });
+
+  it("suggests sharing the car to drivers, with the per-person figure", () => {
+    const commute = items({ commuteMode: "car" }).find((i) => i.title.startsWith("Commute out"));
+    expect(commute?.description).toContain(
+      "Sharing the car with two others cuts each person's share to ~54 g.",
+    );
+  });
+
+  it("points drivers to combining errands", () => {
+    const errands = items({ commuteMode: "carpool" }).find(
+      (i) => i.title === "Combine errands into one trip, or walk short ones",
+    );
+    expect(errands?.description).toMatch(/one combined loop instead of several round trips/);
+  });
+});

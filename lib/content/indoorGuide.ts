@@ -62,8 +62,20 @@ export const INDOOR_GUIDE: GuideSection[] = [
       "Run it in the room you use most, often the bedroom, with doors and windows closed.",
       "Replace or clean filters on the manufacturer's schedule; a clogged filter cleans far less air.",
       "Do not use ozone-generating 'ionizer' or 'ozone' air cleaners; ozone is itself a lung irritant.",
-      "Houseplants are not a substitute for filtration at realistic home scale.",
       "Purifiers reduce particles but do little for gases like NO₂ or CO; source control and ventilation still matter.",
+    ],
+  },
+  {
+    id: "plants",
+    title: "Indoor plants: what they can and cannot do",
+    intro:
+      "Plants are often suggested for cleaner air. They are good to have for comfort and wellbeing, but at home scale they remove very little pollution.",
+    points: [
+      "The well-known NASA experiments (1989) tested plants in small sealed chambers, not in ventilated homes.",
+      "A 2019 review of later studies (Cummings and Waring, Journal of Exposure Science & Environmental Epidemiology) estimated that matching ordinary ventilation would take about 10 to 1,000 potted plants per square metre of floor.",
+      "Plants do not meaningfully lower PM2.5, the main pollutant in winter smog.",
+      "On smog days, rely on closed windows at polluted hours, a HEPA purifier and removing indoor smoke sources; keep plants for wellbeing.",
+      "Avoid overwatering: damp soil can grow mould, which worsens indoor air for people with allergies.",
     ],
   },
 ];

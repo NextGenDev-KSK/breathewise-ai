@@ -18,6 +18,20 @@ describe("emission factors", () => {
     expect(EMISSION_FACTORS.walk.gramsPerPassengerKm).toBe(0);
     expect(EMISSION_FACTORS.cycle.gramsPerPassengerKm).toBe(0);
   });
+
+  it("estimates carpooling as the car factor split between three people", () => {
+    expect(EMISSION_FACTORS.carpool.gramsPerPassengerKm).toBe(54);
+    const r = calculateCommuteEmissions({
+      distanceKm: 10,
+      tripsPerDay: 2,
+      daysPerWeek: 5,
+      currentMode: "car",
+      alternativeMode: "carpool",
+    });
+    expect(r.weeklySavingKg).toBe(10.8); // 100 pkm × (162 − 54) g
+    expect(r.relativeChange).toBeCloseTo(-2 / 3, 5);
+    expect(isOpenAirMode("carpool")).toBe(false);
+  });
 });
 
 describe("calculateCommuteEmissions", () => {

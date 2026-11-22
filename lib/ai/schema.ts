@@ -170,6 +170,8 @@ export const AssistantContextSchema = z.object({
     })
     .nullable(),
   preferences: z.object({
+    /** Daily routine (office, student, home, shift), so advice fits the user's lifestyle. */
+    routine: shortText(20).default("office"),
     commuteMode: shortText(20),
     outdoorActivity: shortText(20),
     children: z.boolean(),

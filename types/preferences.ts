@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const COMMUTE_MODES = ["car", "two_wheeler", "bus", "metro", "walk", "cycle"] as const;
+export const COMMUTE_MODES = ["car", "carpool", "two_wheeler", "bus", "metro", "walk", "cycle"] as const;
 export type CommuteMode = (typeof COMMUTE_MODES)[number];
 
 export const ACTIVITIES = [

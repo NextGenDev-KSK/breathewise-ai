@@ -12,3 +12,7 @@ export const SAMPLE_DATA_SOURCE = "Sample demo data (not real readings)";
 
 /** Official Indian National AQI (CPCB) station readings. */
 export const CPCB_URL = "https://airquality.cpcb.gov.in/AQI_India/";
+
+/** Mask guidance for people exposed to roadside air on high-pollution hours. */
+export const MASK_NOTE =
+  "If you choose to wear a mask, a well-fitted N95/FFP2 respirator filters particles far better than cloth; it does not remove gases.";

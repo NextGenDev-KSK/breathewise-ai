@@ -148,6 +148,20 @@ test("commute calculator returns the expected estimate", async ({ page }) => {
   await expect(page.getByText("Distance must be at least 0.1 km.")).toBeVisible();
 });
 
+test("commute page compares carpooling and estimates combined errands", async ({ page }) => {
+  await setup(page);
+  await page.goto("/commute");
+  await page.getByLabel("Current transport").selectOption("car");
+  await page.getByLabel("Alternative to compare").selectOption("carpool");
+  await page.getByRole("button", { name: "Calculate" }).click();
+  await expect(page.getByTestId("weekly-saving")).toHaveText("10.8 kg CO₂e");
+  await page.getByLabel("Travel mode").selectOption("car");
+  await page.getByRole("button", { name: "Estimate saving" }).click();
+  await expect(page.getByTestId("errand-saving")).toHaveText(
+    "Combining saves 8 km a week (34.7 km a month), about 5.62 kg CO₂e a month.",
+  );
+});
+
 test.describe("assistant", () => {
   test("works in rule-based fallback mode without a Gemini key", async ({ page }) => {
     await setup(page);

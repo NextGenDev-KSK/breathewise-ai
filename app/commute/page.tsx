@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { CommuteCalculator } from "@/components/commute/CommuteCalculator";
+import { ErrandPlanner } from "@/components/commute/ErrandPlanner";
+import { EmissionMethodology } from "@/components/commute/EmissionMethodology";
 
 export const metadata: Metadata = { title: "Smart Commute" };
 
@@ -10,9 +12,13 @@ export default function CommutePage() {
     <>
       <PageHeader
         title="Smart commute"
-        description="Compare the estimated emissions of your regular trips with lower-emission alternatives, using a transparent, documented method."
+        description="Compare the estimated emissions of your regular trips with public transport, carpooling and other alternatives, and see what combining errands saves, using a transparent, documented method."
       />
-      <CommuteCalculator />
+      <div className="space-y-6">
+        <CommuteCalculator />
+        <ErrandPlanner />
+        <EmissionMethodology />
+      </div>
     </>
   );
 }

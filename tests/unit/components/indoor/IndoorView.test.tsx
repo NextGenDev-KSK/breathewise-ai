@@ -18,3 +18,14 @@ describe("IndoorView checklist", () => {
     expect(await screen.findByRole("checkbox", { name: /Damp-dust surfaces/ })).toBeChecked();
   });
 });
+
+describe("Indoor air guide", () => {
+  it("explains honestly what indoor plants can and cannot do", async () => {
+    seedDemoMode();
+    renderWithApp(<IndoorView />);
+    const plants = await screen.findByText("Indoor plants: what they can and cannot do");
+    const section = plants.closest("details");
+    expect(section).toHaveTextContent(/10 to 1,000 potted plants per square metre/);
+    expect(section).toHaveTextContent(/do not meaningfully lower PM2.5/);
+  });
+});

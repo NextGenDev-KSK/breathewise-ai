@@ -13,6 +13,7 @@ const ROUTINE_OPTIONS: readonly SelectOption<Preferences["routine"]>[] = [
 
 const COMMUTE_OPTIONS: readonly SelectOption<Preferences["commuteMode"]>[] = [
   { value: "car", label: "Car" },
+  { value: "carpool", label: "Carpool (shared car)" },
   { value: "two_wheeler", label: "Two-wheeler" },
   { value: "bus", label: "Bus" },
   { value: "metro", label: "Metro" },

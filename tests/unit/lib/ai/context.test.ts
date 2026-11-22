@@ -51,6 +51,12 @@ describe("stationContextFrom", () => {
 });
 
 describe("assistant context with station data", () => {
+  it("tells the assistant the user's daily routine", () => {
+    expect(
+      buildAssistantContext(delhiSnapshot(), prefs({ routine: "student" }), DELHI_NOW).preferences.routine,
+    ).toBe("student");
+  });
+
   it("validates, and stays valid for older clients that send no station", () => {
     const ctx = buildAssistantContext(delhiSnapshot(), prefs(), DELHI_NOW, station);
     expect(AssistantContextSchema.parse(ctx).station?.name).toBe("Lodhi Road, New Delhi - IMD");

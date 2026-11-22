@@ -103,6 +103,11 @@ monthly kg = weekly × 52 ÷ 12
 
 Inputs are validated (0.1–200 km, 1–10 trips, 1–7 days). The UI states that the factors are illustrative, and that CO₂e reductions do not equal a measurable change in local AQI.
 
+## Carpooling and combined errands
+
+- **Carpool** uses the private-car factor divided by three occupants: 162 ÷ 3 = 54 g CO₂e per passenger-km. It assumes the case-study car factor is close to one person driving; the real saving depends on how many people would otherwise drive.
+- **Combine errands:** saving per week = (separate trips × round-trip km − combined-trip km) × times per week; CO₂e = saving × the chosen mode's factor. All distances are the user's own estimates; nothing is inferred about routes. When the combined trip is not shorter, the tool says combining saves no distance.
+
 ## Purifier sizing
 
 The AHAM rule of thumb: smoke CADR (cfm) ≥ ⅔ × room area (ft²), with the area converted from m² and the result also shown in m³/h. It assumes a standard ~2.4 m ceiling.

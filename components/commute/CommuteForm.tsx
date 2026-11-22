@@ -1,13 +1,11 @@
 "use client";
 
 import { Calculator } from "lucide-react";
-import { COMMUTE_MODES } from "@/types/preferences";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { InputField, SelectField } from "@/components/ui/FormField";
-import { EMISSION_FACTORS, type CommuteField, type CommuteFormValues } from "@/lib/engine/emissions";
-
-const MODE_OPTIONS = COMMUTE_MODES.map((mode) => ({ value: mode, label: EMISSION_FACTORS[mode].label }));
+import type { CommuteField, CommuteFormValues } from "@/lib/engine/emissions";
+import { MODE_OPTIONS } from "@/components/commute/modeOptions";
 
 interface CommuteFormProps {
   values: CommuteFormValues;

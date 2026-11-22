@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { COMMUTE_MODES, type CommuteMode } from "@/types/preferences";
+import { firstErrorPerField, numberOrUndefined } from "@/lib/engine/forms";
 
 export interface EmissionFactor {
   mode: CommuteMode;
@@ -14,6 +15,10 @@ export const EMISSION_SOURCE = {
   url: "https://www.oecd.org/content/dam/oecd/en/publications/reports/2023/08/life-cycle-assessment-of-passenger-transport_9e2ebe5e/2d11e416-en.pdf",
 };
 
+const CAR_GRAMS_PER_PKM = 162;
+/** People sharing the car in the carpool estimate. */
+export const CARPOOL_OCCUPANTS = 3;
+
 /**
  * Illustrative, approximate life-cycle factors for an Indian case study. They are
  * not exact for any specific vehicle, city, occupancy level or journey.
@@ -22,8 +27,14 @@ export const EMISSION_FACTORS: Record<CommuteMode, EmissionFactor> = {
   car: {
     mode: "car",
     label: "Private car (petrol/diesel)",
-    gramsPerPassengerKm: 162,
+    gramsPerPassengerKm: CAR_GRAMS_PER_PKM,
     note: "Approximate; varies strongly with occupancy and vehicle.",
+  },
+  carpool: {
+    mode: "carpool",
+    label: "Carpool (car shared by 3 people)",
+    gramsPerPassengerKm: CAR_GRAMS_PER_PKM / CARPOOL_OCCUPANTS,
+    note: "Estimated as the private-car factor split between three people; the real saving depends on how many would otherwise drive.",
   },
   two_wheeler: {
     mode: "two_wheeler",
@@ -101,14 +112,6 @@ export interface CommuteFormValues {
 export type CommuteFormResult =
   { ok: true; input: CommuteInput } | { ok: false; errors: Partial<Record<CommuteField, string>> };
 
-function isCommuteField(key: unknown): key is CommuteField {
-  return typeof key === "string" && (COMMUTE_FIELDS as readonly string[]).includes(key);
-}
-
-/** Empty text means "not entered", which the schema reports with a friendly message. */
-const numberOrUndefined = (text: string): number | undefined =>
-  text.trim() === "" ? undefined : Number(text);
-
 /** Validates typed form values; on failure returns the first error message for each field. */
 export function parseCommuteForm(form: CommuteFormValues): CommuteFormResult {
   const parsed = CommuteInputSchema.safeParse({
@@ -118,12 +121,7 @@ export function parseCommuteForm(form: CommuteFormValues): CommuteFormResult {
     daysPerWeek: numberOrUndefined(form.daysPerWeek),
   });
   if (parsed.success) return { ok: true, input: parsed.data };
-  const errors: Partial<Record<CommuteField, string>> = {};
-  for (const issue of parsed.error.issues) {
-    const field = issue.path[0];
-    if (isCommuteField(field)) errors[field] ??= issue.message;
-  }
-  return { ok: false, errors };
+  return { ok: false, errors: firstErrorPerField(parsed.error.issues, COMMUTE_FIELDS) };
 }
 
 export interface CommuteResult {

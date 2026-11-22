@@ -111,6 +111,7 @@ export function buildAssistantContext(
           }
         : null,
     preferences: {
+      routine: prefs.routine,
       commuteMode: prefs.commuteMode,
       outdoorActivity: prefs.outdoorActivity,
       children: prefs.household.children,

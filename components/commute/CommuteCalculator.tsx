@@ -5,7 +5,6 @@ import type { CommuteMode } from "@/types/preferences";
 import { useApp } from "@/components/app/AppProvider";
 import { CommuteForm } from "@/components/commute/CommuteForm";
 import { CommuteResults } from "@/components/commute/CommuteResults";
-import { EmissionMethodology } from "@/components/commute/EmissionMethodology";
 import {
   calculateCommuteEmissions,
   COMMUTE_FIELDS,
@@ -55,7 +54,6 @@ export function CommuteCalculator() {
         fieldId={fieldId}
       />
       <div aria-live="polite">{result ? <CommuteResults result={result} /> : null}</div>
-      <EmissionMethodology />
     </div>
   );
 }

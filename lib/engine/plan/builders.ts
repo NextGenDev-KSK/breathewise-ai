@@ -42,6 +42,29 @@ const afternoonExposure: ItemBuilder = (ctx, { id, stats, label }) => {
   });
 };
 
+/** Students: whether outdoor games, PE or practice suit this afternoon's air. */
+const afternoonSchool = (ctx: PlanContext, { id, stats, label }: PeriodInput): Recommendation | null => {
+  if (ctx.prefs.routine !== "student") return null;
+  const elevated = isElevated(stats);
+  return makeItem(ctx, id, {
+    key: "school-activity",
+    category: "outdoor",
+    title: elevated
+      ? "Ask for indoor games or PE today"
+      : "Outdoor games and PE are reasonable this afternoon",
+    description: elevated
+      ? "If sports, PE or practice are scheduled outdoors, an indoor session or lighter activity is the better choice today. Take breaks and carry water."
+      : "Afternoon air is forecast to be comparatively reasonable for outdoor games. Check again on the day.",
+    reason: stats
+      ? `Afternoon forecast is ${stats.levelLabel.toLowerCase()} concern, and hard exercise means breathing more air.`
+      : "No afternoon forecast available.",
+    evidence: evidenceFor(stats, label),
+    recommendedTime: "School or college hours",
+    impactType: "exposure-reduction",
+    priority: stats && stats.level >= 3 ? 2 : 4,
+  });
+};
+
 const afternoonIndoor: ItemBuilder = (ctx, { id, stats, label }) => {
   const elevated = isElevated(stats);
   let title = "Keep indoor sources low";
@@ -68,7 +91,7 @@ const afternoonIndoor: ItemBuilder = (ctx, { id, stats, label }) => {
 
 const afternoonLowEmission: ItemBuilder = (ctx, { id }) => {
   const mode = ctx.prefs.commuteMode === "none" ? "car" : ctx.prefs.commuteMode;
-  const drives = mode === "car" || mode === "two_wheeler";
+  const drives = mode === "car" || mode === "carpool" || mode === "two_wheeler";
   const factor = EMISSION_FACTORS[mode];
   return makeItem(ctx, id, {
     key: "low-emission",
@@ -77,7 +100,7 @@ const afternoonLowEmission: ItemBuilder = (ctx, { id }) => {
       ? "Combine errands into one trip, or walk short ones"
       : "Keep short errands on foot or by cycle",
     description: drives
-      ? "Fewer and shorter vehicle trips cut emissions. For short distances, walking or cycling has zero direct emissions, ideally at a cleaner hour."
+      ? "Fewer and shorter vehicle trips cut emissions: one combined loop instead of several round trips from home. For short distances, walking or cycling has zero direct emissions, ideally at a cleaner hour. Smart Commute estimates what combining your trips saves."
       : "Walking and cycling short distances have zero direct emissions. On high-pollution hours, keep them brief.",
     reason: "Avoiding unnecessary vehicle trips reduces emissions and traffic pollution collectively.",
     evidence: [`${factor.label}: ~${factor.gramsPerPassengerKm} g CO₂e/pkm`],
@@ -93,9 +116,10 @@ const afternoonLowEmission: ItemBuilder = (ctx, { id }) => {
   });
 };
 
-/** Afternoon: exposure, indoor and low-emission suggestions. */
+/** Afternoon: exposure, school activities for students, indoor and low-emission suggestions. */
 const afternoon: PeriodBuilder = (ctx, period) => [
   afternoonExposure(ctx, period),
+  afternoonSchool(ctx, period),
   afternoonIndoor(ctx, period),
   afternoonLowEmission(ctx, period),
 ];
