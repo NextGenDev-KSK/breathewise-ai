@@ -88,6 +88,44 @@ const shortText = (max: number) => z.string().max(max);
 const localTime = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
 
 /**
+ * Measurements from the nearest official monitor (OpenAQ) and its National AQI, calculated with the CPCB
+ * method from 24-hour station averages. Contains the station's name and distance, never coordinates.
+ */
+export const StationContextSchema = z.object({
+  name: shortText(120),
+  distanceKm: z.number().finite().min(0).max(30),
+  measuredAt: localTime,
+  sample: z.boolean(),
+  readings: z
+    .array(
+      z.object({
+        pollutant: shortText(10),
+        value: z.number().finite().min(0).max(100_000),
+        unit: shortText(8),
+      }),
+    )
+    .max(7),
+  nationalAqi: z
+    .object({
+      index: z.number().int().min(0).max(401),
+      aboveScale: z.boolean(),
+      category: shortText(30),
+      prominentPollutant: shortText(10),
+      averages: z
+        .array(
+          z.object({
+            pollutant: shortText(10),
+            average: z.number().finite().min(0).max(100_000),
+            subIndex: z.number().int().min(0).max(401),
+          }),
+        )
+        .max(7),
+    })
+    .nullable(),
+});
+export type StationContext = z.infer<typeof StationContextSchema>;
+
+/**
  * The environmental snapshot the client sends with a question. Deliberately excludes
  * coordinates: only a place label and validated readings reach the model.
  */
@@ -142,6 +180,8 @@ export const AssistantContextSchema = z.object({
   }),
   ruleRecommendations: z.array(z.object({ title: shortText(200), reason: shortText(500) })).max(8),
   isIndia: z.boolean(),
+  /** Nearest monitor's measurements; null when none is available. */
+  station: StationContextSchema.nullable().default(null),
 });
 export type AssistantContext = z.infer<typeof AssistantContextSchema>;
 

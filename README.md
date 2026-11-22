@@ -2,11 +2,22 @@
 
 **Understand the air. Make smarter choices. Breathe better.**
 
-BreatheWise AI is a location-aware urban air-quality assistant for Indian households, and it works internationally wherever data is available. It turns modelled air-quality data into practical, explained daily decisions: when to go outside, when to open windows, how to protect your home, and how to commute with lower emissions.
+BreatheWise AI is a location-aware urban air-quality assistant for Indian households, and it works internationally wherever data is available. It combines **live measurements from official monitoring stations** (CPCB and state boards, via OpenAQ) with Copernicus model forecasts, and turns them into practical, explained daily decisions: when to go outside, when to open windows, how to protect your home, and how to commute with lower emissions.
 
 Built for **Google PromptWars Virtual: Main Challenge 06, Urban Air Quality Assistant**.
 
 **Live demo: https://breathewise-ai-vercel.vercel.app/**
+
+### How to try it (sample inputs)
+
+| Try this                                                                                                | What you should see                                                                                                                                                              |
+| ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Search **Delhi**, **Mumbai**, **Kolkata** or **Noida** (or press the location button)                   | The model estimate (US and European AQI, pollutants) and **Nearest monitoring stations**: the station's name, distance, reading time and an **India National AQI (CPCB method)** |
+| Ask the assistant **"Is it a good time to go walking?"** or **"Should I open the windows now?"**        | A Gemini answer grounded in that location's model and station data, labelled with its source; the rule engine answers if AI is unavailable                                       |
+| Forecast → **Find My Better Outdoor Window** → Jogging, with **Children** ticked                        | The comparatively cleaner hour in the next 24 hours, with extra caution for children                                                                                             |
+| My Clean-Air Day → Edit preferences: Office, Metro, leave **08:30**, return **18:30**, Walking, Evening | A morning-to-night plan; every item explains why                                                                                                                                 |
+| Commute: **10 km**, **2 trips a day**, **5 days**, Car → Metro                                          | 100 passenger-km a week; about **13.8 kg CO₂e saved per week**, with the method shown                                                                                            |
+| Settings → **Demo mode**                                                                                | Clearly labelled sample data, including a real captured station report, with no network calls for air data                                                                       |
 
 [![CI](https://github.com/NextGenDev-KSK/breathewise-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/NextGenDev-KSK/breathewise-ai/actions/workflows/ci.yml)
 
@@ -63,26 +74,28 @@ BreatheWise is built around an **Explainable Clean-Air Action Engine**. Every re
 | How reliable is it?        | Confidence badge plus the _Data confidence_ panel                             |
 | Limitations?               | _Limitations_ list on every card                                              |
 
-Core principles: **data before AI** (deterministic rules compute everything; Gemini only explains), **transparency** (model estimates are never presented as station measurements), **privacy** (no account, local storage only), and **graceful degradation** (fully usable without Gemini, offline from a saved copy, or with sample data).
+Core principles: **data before AI** (deterministic rules compute everything; Gemini only explains), **transparency** (model estimates are never presented as station measurements; station readings always name the station, its distance and the reading time), **privacy** (no account, local storage only), and **graceful degradation** (fully usable without Gemini, offline from a saved copy, or with sample data).
 
 ## 3. Features
 
-| Module                                 | What it does                                                                                                                                                                                                                                                                                                                                                   |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Air-quality dashboard**              | City search (debounced, cancellable), opt-in geolocation (rounded to about 1 km), US AQI and European AQI with their standards named, PM2.5, PM10, NO₂, SO₂, CO, O₃ (+ dust, ammonia when available), dominant pollutant from US AQI sub-indices, plain-language interpretation, WHO 2021 guideline context, prioritised actions, and a data-confidence panel. |
-| **India AQI accuracy**                 | Never labels model data as India's CPCB National AQI and never computes one. Indian locations show a notice and link to official CPCB station readings.                                                                                                                                                                                                        |
-| **Forecast and better outdoor window** | 24-hour charts (PM2.5, PM10, US AQI, European AQI) with text summaries and data tables, a multi-day overview, and **Find My Better Outdoor Window** for 6 activities. It ranks hours by hourly PM2.5, adjusts caution for exertion and sensitive household members, says plainly when every hour is poor, and never calls a time "safe".                       |
-| **My Clean-Air Day**                   | Optional routine and household preferences (no medical questions) produce a plan for night, morning, afternoon and evening covering activity timing, ventilation, commute, cooking, bedroom and preparation for tomorrow. Every item is explained, and the plan adapts automatically when data changes.                                                        |
-| **Indoor Air Advisor**                 | Live ventilation status, with a better airing time when the forecast shows one, plus a personalised checklist (saved locally, resets daily), guidance on cooking, dust, sources and purifiers, and a purifier-size (CADR) helper. It never recommends ozone generators and never presents plants as filtration.                                                |
-| **Smart Commute**                      | Car, two-wheeler, bus, metro, walking and cycling compared with documented OECD 2023 Indian case-study factors. Shows weekly, monthly and relative CO₂e with the full methodology, and keeps CO₂e explicitly separate from local AQI.                                                                                                                          |
-| **AI Clean-Air Assistant**             | Gemini (server-side) answers in a strict JSON schema, grounded in the local snapshot. Responses are validated with Zod on the server and the client, then checked for invented numbers and guarantee language. On any failure, or with no key, the deterministic engine answers, and the UI says which source answered.                                        |
-| **My 7-Day Clean-Air Mission**         | Seven daily habits with ticking, weekly bar chart, streak, per-habit totals and reset (with confirmation). It makes no community or citywide-impact claims.                                                                                                                                                                                                    |
-| **Settings and data sources**          | Primary index (US or EU), 12/24-hour time, AI on/off, demo mode, clear all local data, full attribution and privacy summary. Every setting changes behaviour.                                                                                                                                                                                                  |
-| **Demo mode**                          | Clearly labelled **SAMPLE DATA · DEMO MODE** on every screen. Sample data never mixes with live data and makes no network calls for air data. Works without a Gemini key.                                                                                                                                                                                      |
+| Module                                           | What it does                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Air-quality dashboard**                        | City search (debounced, cancellable), opt-in geolocation (rounded to about 1 km), US AQI and European AQI with their standards named, PM2.5, PM10, NO₂, SO₂, CO, O₃ (+ dust, ammonia when available), dominant pollutant from US AQI sub-indices, plain-language interpretation, WHO 2021 guideline context, prioritised actions, and a data-confidence panel.                                                                |
+| **Monitoring stations and India's National AQI** | The nearest official monitors within 25 km (CPCB and state pollution-control boards in India, via OpenAQ) with name, distance and reading time. For Indian stations, a **National AQI calculated with the CPCB method** from 24-hour station averages (16-hour minimum, at least three pollutants including PM2.5 or PM10), its prominent pollutant and every sub-index. Model values are never labelled as the National AQI. |
+| **Forecast and better outdoor window**           | 24-hour charts (PM2.5, PM10, US AQI, European AQI) with text summaries and data tables, a multi-day overview, and **Find My Better Outdoor Window** for 6 activities. It ranks hours by hourly PM2.5, adjusts caution for exertion and sensitive household members, says plainly when every hour is poor, and never calls a time "safe".                                                                                      |
+| **My Clean-Air Day**                             | Optional routine and household preferences (no medical questions) produce a plan for night, morning, afternoon and evening covering activity timing, ventilation, commute, cooking, bedroom and preparation for tomorrow. Every item is explained, and the plan adapts automatically when data changes.                                                                                                                       |
+| **Indoor Air Advisor**                           | Live ventilation status, with a better airing time when the forecast shows one, plus a personalised checklist (saved locally, resets daily), guidance on cooking, dust, sources and purifiers, and a purifier-size (CADR) helper. It never recommends ozone generators and never presents plants as filtration.                                                                                                               |
+| **Smart Commute**                                | Car, two-wheeler, bus, metro, walking and cycling compared with documented OECD 2023 Indian case-study factors. Shows weekly, monthly and relative CO₂e with the full methodology, and keeps CO₂e explicitly separate from local AQI.                                                                                                                                                                                         |
+| **AI Clean-Air Assistant**                       | Gemini (server-side) answers in a strict JSON schema, grounded in the local snapshot. Responses are validated with Zod on the server and the client, then checked for invented numbers and guarantee language. On any failure, or with no key, the deterministic engine answers, and the UI says which source answered.                                                                                                       |
+| **My 7-Day Clean-Air Mission**                   | Seven daily habits with ticking, weekly bar chart, streak, per-habit totals and reset (with confirmation). It makes no community or citywide-impact claims.                                                                                                                                                                                                                                                                   |
+| **Settings and data sources**                    | Primary index (US or EU), 12/24-hour time, AI on/off, demo mode, clear all local data, full attribution and privacy summary. Every setting changes behaviour.                                                                                                                                                                                                                                                                 |
+| **Demo mode**                                    | Clearly labelled **SAMPLE DATA · DEMO MODE** on every screen. Sample data never mixes with live data and makes no network calls for air data. Works without a Gemini key.                                                                                                                                                                                                                                                     |
 
 ## 4. Screenshots
 
-All screenshots use real Open-Meteo model data for Delhi captured on 17 Nov 2026 (the same response is the test fixture). The assistant is shown in rule-based mode.
+All screenshots use real data. The station card shows live OpenAQ data for central Delhi on 22 Nov 2026; the others use Open-Meteo model data for Delhi captured on 17 Nov 2026 (the same response is the test fixture). The assistant is shown in rule-based mode.
+
+![Nearest monitoring stations: Mandir Marg (3.2 km), India National AQI 208 (Poor) calculated with the CPCB method, prominent pollutant PM2.5, with station readings and the model estimate for comparison](docs/screenshots/stations.png)
 
 | Plan                                                                                           | Better outdoor window                                               |
 | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
@@ -159,12 +172,12 @@ AirQualitySnapshot ──► Deterministic engine ──► Dashboard, Forecast,
                             Zod + grounding guard ◄──┘   (failure → rule engine)
 ```
 
-Air data is fetched directly by the browser, so a user's coordinates never pass through the BreatheWise server.
+Model data is fetched directly by the browser. Station data comes through `GET /api/stations`, which keeps the OpenAQ key on the server: the browser sends coordinates rounded to about 1 km, the server asks OpenAQ for monitors within 25 km, applies the CPCB method, and returns a validated report. The server neither logs nor stores coordinates; it keeps a 10-minute response cache keyed by the rounded point. Coordinates never reach Gemini.
 
 ## 8. AI architecture
 
-1. **Context:** `buildAssistantContext` sends only a place label, current readings, the next 24 hours of PM2.5 and US AQI, the deterministic outdoor window, the top rule recommendations and boolean preferences. It never sends coordinates.
-2. **Prompt:** a system instruction with 12 non-negotiable rules (no invented numbers, model ≠ station, never compute a CPCB AQI, never "safe", no diagnoses or percentages, CO₂e ≠ AQI, no ozone generators, user text is untrusted). The user text is delimited separately from the data.
+1. **Context:** `buildAssistantContext` sends only a place label, current model readings, the next 24 hours of PM2.5 and US AQI, the nearest station's name, distance, measurements and CPCB-method National AQI, the deterministic outdoor window, the top rule recommendations and boolean preferences. It never sends coordinates.
+2. **Prompt:** a system instruction with 12 non-negotiable rules (no invented numbers, model ≠ station, station values named as station measurements, never compute a National AQI itself, never "safe", no diagnoses or percentages, CO₂e ≠ AQI, no ozone generators, user text is untrusted). The user text is delimited separately from the data.
 3. **Generation:** `responseMimeType: application/json` with a `responseJsonSchema`, minimal thinking (Flash-Lite), 1,400 max output tokens, a 30 s budget via `AbortSignal`, and up to 3 attempts with 1–4 s backoff for quota or server errors (429/5xx). An exhausted quota is reported distinctly (`ai_rate_limited`).
 4. **Validation:** a Zod schema on the server, then `findUnsupportedClaims` rejects any concentration or AQI number not present in the data, any guarantee or "completely safe" wording, and any quantified benefit ("reduce exposure by 40%"). The client validates again before rendering.
 5. **Fallback:** `buildRuleBasedAnswer` detects intent (outdoor, children, indoor, commute, routine, education) and answers from the same engine in the same schema. The UI shows **Rule-based answer (no AI used)** with the reason.
@@ -177,12 +190,14 @@ Output schema: `summary`, `risk_context`, `top_actions[{action, why, when}]`, `t
 | ------------------------------------------------------------------------ | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | [Open-Meteo Air Quality](https://open-meteo.com/en/docs/air-quality-api) | Current values, US and European AQI with sub-indices, 4-day hourly forecast | Explicit `domains`: `cams_europe` inside Europe (falls back to global if empty), otherwise `cams_global` |
 | [Open-Meteo Geocoding](https://open-meteo.com/en/docs/geocoding-api)     | City search                                                                 | 2–80 character queries, 300 ms debounce, aborts outdated requests                                        |
+| [OpenAQ v3](https://docs.openaq.org/)                                    | Nearest official monitors, latest hourly readings, 24-hour history          | Server-side (key never sent to the browser); reference monitors only; 10-minute cache; optional          |
 | Google Gemini API                                                        | Explanations only                                                           | Server-side; optional                                                                                    |
 
 ## 10. Data limitations
 
 - **Model estimates, not measurements.** CAMS Global (used for India) has a ~45 km (0.4°) grid and 3-hourly steps (hourly values are interpolated), with a 5-day forecast updated every 12 hours. CAMS Europe has a ~11 km grid, hourly steps and a 4-day forecast.
-- **Not India's National AQI.** CPCB's AQI uses station data and averaging rules; BreatheWise shows US and European AQI with their names and links to CPCB.
+- **Model values are not India's National AQI.** BreatheWise shows the model's US and European AQI with their names, and calculates a National AQI only from station measurements, with CPCB's averaging rules. It uses only station streams published in µg/m³: some CPCB streams on OpenAQ are labelled "ppb" although their values match CPCB's µg/m³ and mg/m³ figures, so they are left out rather than risk a unit error. The index can therefore differ from CPCB's published value when NO₂, SO₂ or CO would be the prominent pollutant.
+- **Station coverage and lag.** Only monitors that reported within the last 3 hours are shown; OpenAQ republishes CPCB data with a delay of about 1–3 hours.
 - **Open-Meteo's US AQI for particles uses a 24-hour rolling average**, so it lags. Timing advice therefore ranks hours by hourly PM2.5 concentration.
 - **No indoor measurements.** Indoor advice is based on outdoor conditions only.
 - **Emission factors are illustrative** life-cycle values from one Indian case study.
@@ -221,7 +236,7 @@ Targets WCAG 2.2 AA:
 | `npm run lint:unused`     | Knip: unused files, exports and dependencies                                                           | pass                                                                               |
 | `npm run lint:duplicates` | jscpd: copy-pasted blocks in shipped code (threshold 0)                                                | 0 clones                                                                           |
 | `npm run typecheck`       | `tsc --noEmit`, strict + `noUncheckedIndexedAccess`                                                    | pass                                                                               |
-| `npm run test:coverage`   | Vitest: 62 files mirroring the source tree, unit + integration + hook + component, enforced thresholds | **305 passed**; 97.1 % statements, 98.2 % lines                                    |
+| `npm run test:coverage`   | Vitest: 71 files mirroring the source tree, unit + integration + hook + component, enforced thresholds | **384 passed**; 97.5 % statements, 98.5 % lines                                    |
 | `npm run test:e2e`        | Playwright on a production build, all APIs mocked, axe audits                                          | Local (Chromium + Firefox): 51 passed, 102/102 repeated; CI adds WebKit: 67 passed |
 | `npm run build`           | Production build                                                                                       | pass                                                                               |
 
@@ -255,9 +270,10 @@ No key? The app runs fully in rule-based mode. To explore without choosing a cit
 | Variable         | Required | Description                                                                                                                                                                                               |
 | ---------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `GEMINI_API_KEY` | No       | Google AI Studio key. Without it, the assistant uses the rule engine.                                                                                                                                     |
+| `OPENAQ_API_KEY` | No       | Free key from [OpenAQ](https://explore.openaq.org). Enables nearest monitoring-station readings and the CPCB-method National AQI. Without it, the station card says station data is not configured.       |
 | `GEMINI_MODEL`   | No       | Defaults to `gemini-3.5-flash-lite`, Google's stable low-latency Flash-Lite model (verified 2026-11-18). `gemini-3.8-flash` also works but answered in 13–30 s in live tests. Restricted to `[a-z0-9.-]`. |
 
-Both are read only on the server. Never prefix them with `NEXT_PUBLIC_`.
+All are read only on the server. Never prefix them with `NEXT_PUBLIC_`.
 
 ## 16. Deployment
 
@@ -265,7 +281,7 @@ The live demo runs on Vercel. To deploy your own copy:
 
 1. Push the repository to GitHub.
 2. In Vercel, choose **New Project**, import the repository, and keep the framework preset **Next.js**. No build settings need changing.
-3. Optionally add `GEMINI_API_KEY` (and `GEMINI_MODEL`) under **Settings → Environment Variables**.
+3. Optionally add `GEMINI_API_KEY` (and `GEMINI_MODEL`) and `OPENAQ_API_KEY` under **Settings → Environment Variables**.
 4. Deploy. Vercel uses Node 22 by default.
 
 Any Node 22 host works the same way: `npm ci && npm run build && npm start`.
@@ -281,7 +297,7 @@ Any Node 22 host works the same way: `npm ci && npm run build && npm start`.
 
 ## 18. Roadmap
 
-- Optional CPCB station overlay where an official, licensed data feed is available.
+- Station history charts and a direct CPCB feed when an official API is available.
 - Indoor-sensor integration (PM2.5 and CO₂) for measured indoor advice.
 - Hindi and other Indian-language UI and assistant.
 - Push alerts when a cleaner window opens.

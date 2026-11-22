@@ -1,0 +1,97 @@
+{
+  "source": "OpenAQ",
+  "fetchedAt": "2026-11-22T05:31:53.573Z",
+  "stations": [
+    {
+      "id": 5634,
+      "name": "Lodhi Road, New Delhi - IMD",
+      "provider": "CPCB",
+      "countryCode": "IN",
+      "distanceKm": 2.6,
+      "lastUpdated": "2026-11-22T03:00:00Z"
+    },
+    {
+      "id": 6929,
+      "name": "Major Dhyan Chand National Stadium, Delhi - DPCC",
+      "provider": "CPCB",
+      "countryCode": "IN",
+      "distanceKm": 2.7,
+      "lastUpdated": "2026-11-22T03:30:00Z"
+    },
+    {
+      "id": 11607,
+      "name": "Lodhi Road, Delhi - IITM",
+      "provider": "CPCB",
+      "countryCode": "IN",
+      "distanceKm": 2.7,
+      "lastUpdated": "2026-11-22T03:00:00Z"
+    }
+  ],
+  "nearest": {
+    "station": {
+      "id": 5634,
+      "name": "Lodhi Road, New Delhi - IMD",
+      "provider": "CPCB",
+      "countryCode": "IN",
+      "distanceKm": 2.6,
+      "lastUpdated": "2026-11-22T03:00:00Z"
+    },
+    "readings": [
+      {
+        "pollutant": "pm10",
+        "value": 202,
+        "unit": "µg/m³",
+        "measuredAt": "2026-11-22T03:00:00Z"
+      },
+      {
+        "pollutant": "ozone",
+        "value": 26.39,
+        "unit": "µg/m³",
+        "measuredAt": "2026-11-22T03:00:00Z"
+      },
+      {
+        "pollutant": "pm2_5",
+        "value": 80.5,
+        "unit": "µg/m³",
+        "measuredAt": "2026-11-22T03:00:00Z"
+      }
+    ],
+    "naqi": {
+      "ok": true,
+      "index": 141,
+      "aboveScale": false,
+      "category": "Moderately polluted",
+      "level": 2,
+      "prominent": {
+        "pollutant": "pm10",
+        "label": "PM10",
+        "concentration": 161.04166666666666,
+        "index": 141,
+        "aboveScale": false
+      },
+      "subIndices": [
+        {
+          "pollutant": "pm10",
+          "label": "PM10",
+          "concentration": 161.04166666666666,
+          "index": 141,
+          "aboveScale": false
+        },
+        {
+          "pollutant": "pm2_5",
+          "label": "PM2.5",
+          "concentration": 69.18333333333332,
+          "index": 131,
+          "aboveScale": false
+        },
+        {
+          "pollutant": "ozone",
+          "label": "O₃",
+          "concentration": 86.4625,
+          "index": 86,
+          "aboveScale": false
+        }
+      ]
+    }
+  }
+}

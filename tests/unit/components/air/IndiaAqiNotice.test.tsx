@@ -7,7 +7,7 @@ describe("IndiaAqiNotice", () => {
   it("says the values are not India's National AQI and links to official CPCB readings", () => {
     render(<IndiaAqiNotice />);
     const notice = screen.getByRole("complementary", { name: "About India's National AQI" });
-    expect(notice).toHaveTextContent("This is not India's official National AQI");
+    expect(notice).toHaveTextContent("The values above are not India's official National AQI");
     expect(notice).toHaveTextContent("does not calculate a CPCB AQI from model data");
     const link = screen.getByRole("link", { name: /Check official CPCB station readings/ });
     expect(link).toHaveAttribute("href", CPCB_URL);

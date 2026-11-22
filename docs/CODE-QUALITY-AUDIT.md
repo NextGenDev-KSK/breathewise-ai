@@ -17,8 +17,8 @@ This audit started from the first competition evaluation (96.83/100): **Code Qua
 | Copy-pasted code blocks (jscpd)                                                                       | not measured                | **0 clones**, enforced in CI (`npm run lint:duplicates`)                                                                                            |
 | Exported functions without a doc comment                                                              | 70 of 213                   | **0**, enforced (`jsdoc/require-jsdoc`)                                                                                                             |
 | ESLint rule set                                                                                       | Next + syntactic TypeScript | + type-aware rules (floating promises, misused promises, exhaustive switches, unnecessary assertions, non-null assertions, consistent type imports) |
-| Unit/integration/component tests                                                                      | 191 (15 files)              | **305** (62 files mirroring the source tree)                                                                                                        |
-| Statement / branch / line coverage (all source)                                                       | 77.2 % / – / 78.4 %         | **97.1 % / 85.8 % / 98.2 %**, enforced thresholds (95 / 84 / 96)                                                                                    |
+| Unit/integration/component tests                                                                      | 191 (15 files)              | **384** (71 files mirroring the source tree)                                                                                                        |
+| Statement / branch / line coverage (all source)                                                       | 77.2 % / – / 78.4 %         | **97.5 % / 86.9 % / 98.5 %**, enforced thresholds (95 / 84 / 96)                                                                                    |
 | End-to-end browsers                                                                                   | Chromium                    | Chromium (desktop + mobile), Firefox; WebKit in CI                                                                                                  |
 | Lighthouse Performance (mobile, `/`, `/commute`, `/assistant`)                                        | 92–93, 91, 91               | **94, 96, 95–99**                                                                                                                                   |
 | Total blocking time (`/`, `/commute`)                                                                 | 240–320 ms, 250 ms          | **80 ms, 40 ms**                                                                                                                                    |
@@ -182,7 +182,7 @@ None in functionality. Small consistent improvements:
 ```bash
 npm ci
 npm run format:check && npm run lint && npm run lint:unused && npm run lint:duplicates && npm run typecheck
-npm run test:coverage                       # 305 tests + enforced coverage
+npm run test:coverage                       # 384 tests + enforced coverage
 npx playwright install chromium firefox
 npx playwright test --project=desktop-chromium --project=mobile-chromium --project=desktop-firefox --repeat-each=2
 grep -rn "eslint-disable" app components hooks lib types proxy.ts | wc -l          # 0

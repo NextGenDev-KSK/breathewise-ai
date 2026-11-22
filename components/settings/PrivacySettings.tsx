@@ -36,8 +36,9 @@ export function PrivacySettings() {
             (localStorage).
           </li>
           <li>
-            Detected location is rounded to about 1 km and used only to request air-quality data from
-            Open-Meteo.
+            Your location is rounded to about 1 km and used only to look up air-quality data: model data from
+            Open-Meteo, and nearby monitoring stations from OpenAQ through this site&apos;s server, which does
+            not log or store it.
           </li>
           <li>The AI assistant never receives your coordinates. Conversations are not stored.</li>
         </ul>

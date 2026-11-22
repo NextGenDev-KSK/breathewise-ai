@@ -13,6 +13,39 @@ BreatheWise requests the domain explicitly (`cams_europe` inside 25°W–45°E, 
 
 **Requested variables.** Current: `pm2_5, pm10, nitrogen_dioxide, sulphur_dioxide, carbon_monoxide, ozone, dust, ammonia, us_aqi, european_aqi, us_aqi_pm2_5, us_aqi_pm10, us_aqi_nitrogen_dioxide, us_aqi_sulphur_dioxide, us_aqi_carbon_monoxide, us_aqi_ozone`. Hourly: `pm2_5, pm10, nitrogen_dioxide, ozone, us_aqi, european_aqi`. Also `forecast_days=4` and `timezone=auto`. All concentrations are in µg/m³.
 
+**OpenAQ v3** (`https://api.openaq.org/v3`), verified against live responses on 2026-11-22. OpenAQ republishes station data from CPCB and state pollution-control boards in India, and from official networks worldwide. BreatheWise calls it only from the server, with the key in an `X-API-Key` header.
+
+## Monitoring stations and the National AQI
+
+**Station selection.**
+
+1. `GET /v3/locations?coordinates=<lat>,<lon>&radius=25000&monitor=true` lists reference-grade monitors within 25 km (OpenAQ's maximum radius). Low-cost sensors and mobile units are excluded: the CPCB index is defined for reference monitors.
+2. A station counts as active if it reported within the last 3 hours. Many listed stations stopped reporting years ago (several Delhi entries last reported in 2018).
+3. Results are not sorted by OpenAQ, so BreatheWise sorts by distance and shows the three nearest active monitors.
+
+**Readings.** `GET /v3/locations/<id>/latest` returns the latest value of every sensor. Active stations publish two streams for some pollutants (an older stream that stopped and a current one), so BreatheWise takes, per pollutant, the stream with the newest reading. Only streams labelled µg/m³ are used. CPCB's NO₂, SO₂ and CO streams on OpenAQ are often labelled "ppb" although their values match CPCB's µg/m³ and mg/m³ figures (for example CO 1.64 "ppb", a normal Delhi value in mg/m³ and implausibly low in ppb; NOx 0.017 "ppb"), so they are excluded rather than converted. CO in µg/m³ is converted to mg/m³ (÷ 1000), the unit CPCB uses.
+
+**National AQI (CPCB, 2014).**
+
+| Pollutant (averaging) | Good  | Satisfactory | Moderately polluted | Poor     | Very poor | Severe |
+| --------------------- | ----- | ------------ | ------------------- | -------- | --------- | ------ |
+| PM2.5 (24 h, µg/m³)   | 0–30  | 31–60        | 61–90               | 91–120   | 121–250   | 250+   |
+| PM10 (24 h, µg/m³)    | 0–50  | 51–100       | 101–250             | 251–350  | 351–430   | 430+   |
+| NO₂ (24 h, µg/m³)     | 0–40  | 41–80        | 81–180              | 181–280  | 281–400   | 400+   |
+| SO₂ (24 h, µg/m³)     | 0–40  | 41–80        | 81–380              | 381–800  | 801–1600  | 1600+  |
+| NH₃ (24 h, µg/m³)     | 0–200 | 201–400      | 401–800             | 801–1200 | 1201–1800 | 1800+  |
+| O₃ (8 h, µg/m³)       | 0–50  | 51–100       | 101–168             | 169–208  | 209–748   | 748+   |
+| CO (8 h, mg/m³)       | 0–1.0 | 1.1–2.0      | 2.1–10              | 10.1–17  | 17.1–34   | 34+    |
+
+1. For each pollutant, `GET /v3/sensors/<id>/hours` returns hourly values; the last 24 hours ending with the latest reading are aligned hour by hour, with gaps kept as missing.
+2. PM2.5, PM10, NO₂, SO₂ and NH₃ use the 24-hour mean, which needs **at least 16 hourly values** (CPCB). O₃ and CO use the highest 8-hour running mean; each 8-hour window needs at least 6 values.
+3. Each average maps to a sub-index by linear interpolation within its band. The published integer ranges are applied as continuous bands (0–30, above 30 to 60, …) so fractional averages never fall into a gap.
+4. The index is the highest sub-index, and that pollutant is the prominent one. It needs **at least three pollutants, one of them PM2.5 or PM10**; otherwise the card says what is missing.
+5. Above the Severe threshold CPCB publishes no upper concentration, so the value is shown as **401+**, not extrapolated.
+6. If the nearest monitor cannot give an index (for example a PM2.5-only monitor), the next nearest of the three is tried, and the card says which station the index comes from.
+
+Worked example (test fixture, real R K Puram data captured 22 Nov 2026): 23 of 24 hours of PM2.5 average 114.35 µg/m³ → 200 + (114.35 − 90) × 100 / 30 = **281, Poor**.
+
 ## Validation rules
 
 - The response structure is validated with Zod; invalid payloads are rejected with a typed error.
@@ -22,11 +55,11 @@ BreatheWise requests the domain explicitly (`cams_europe` inside 25°W–45°E, 
 
 ## Indices
 
-| Standard                       | Bands used                                                                                                                    | Source of values         |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| US AQI (US EPA)                | 0–50 Good, 51–100 Moderate, 101–150 Unhealthy for Sensitive Groups, 151–200 Unhealthy, 201–300 Very Unhealthy, 301+ Hazardous | Calculated by Open-Meteo |
-| European AQI (EEA, 2024 bands) | 0–20 Good, 20–40 Fair, 40–60 Moderate, 60–80 Poor, 80–100 Very poor, >100 Extremely poor                                      | Calculated by Open-Meteo |
-| **India National AQI (CPCB)**  | **Not computed.** It needs station measurements and specific averaging periods. A notice links to official CPCB readings.     | not applicable           |
+| Standard                       | Bands used                                                                                                                                                                                      | Source of values                                                      |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| US AQI (US EPA)                | 0–50 Good, 51–100 Moderate, 101–150 Unhealthy for Sensitive Groups, 151–200 Unhealthy, 201–300 Very Unhealthy, 301+ Hazardous                                                                   | Calculated by Open-Meteo                                              |
+| European AQI (EEA, 2024 bands) | 0–20 Good, 20–40 Fair, 40–60 Moderate, 60–80 Poor, 80–100 Very poor, >100 Extremely poor                                                                                                        | Calculated by Open-Meteo                                              |
+| **India National AQI (CPCB)**  | Good 0–50, Satisfactory 51–100, Moderately polluted 101–200, Poor 201–300, Very poor 301–400, Severe 401–500. **Calculated only from station measurements**, never from model data (see below). | Calculated by BreatheWise from OpenAQ station data with CPCB's method |
 
 **Concern level.** The engine uses a neutral 0–5 scale (_Low, Moderate, Elevated, High, Very high, Severe_) derived from US AQI when available, else European AQI, else PM2.5 concentration (US EPA 2024 PM2.5 breakpoints: 9 / 35.4 / 55.4 / 125.4 / 225.4 µg/m³). The UI always shows which basis was used, together with the standard's own category name.
 

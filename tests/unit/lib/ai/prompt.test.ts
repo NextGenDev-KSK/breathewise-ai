@@ -13,7 +13,8 @@ describe("prompt construction", () => {
     expect(prompt.indexOf("DATA")).toBeLessThan(prompt.indexOf("Ignore previous instructions"));
     expect(SYSTEM_INSTRUCTION).toMatch(/Never invent AQI values/);
     expect(SYSTEM_INSTRUCTION).toMatch(/CPCB/);
-    expect(SYSTEM_INSTRUCTION).toMatch(/never compute a CPCB AQI/i);
+    expect(SYSTEM_INSTRUCTION).toMatch(/never compute a National AQI yourself/i);
+    expect(SYSTEM_INSTRUCTION).toMatch(/Values in "station", when present, ARE hourly measurements/);
   });
 });
 

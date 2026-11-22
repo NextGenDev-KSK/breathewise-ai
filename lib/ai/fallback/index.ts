@@ -1,7 +1,8 @@
 import type { AirQualitySnapshot } from "@/types/air";
 import { hasSensitiveMember, type Preferences } from "@/types/preferences";
 import type { Recommendation, RecommendationCategory } from "@/types/recommendation";
-import { RESPONSE_LIMITS, type AssistantResponse } from "@/lib/ai/schema";
+import { RESPONSE_LIMITS, type AssistantResponse, type StationContext } from "@/lib/ai/schema";
+import { stationSentence } from "@/lib/ai/fallback/station";
 import { detectActivity, detectIntent, detectPollutant, type Intent } from "@/lib/ai/fallback/intents";
 import type { ConcernAssessment } from "@/lib/air/indices";
 import { POLLUTANTS } from "@/lib/air/pollutants";
@@ -28,6 +29,8 @@ export interface FallbackInput {
   preferences: Preferences;
   nowMs: number;
   formatTime?: FormatTime;
+  /** Nearest monitor's measurements, when available. */
+  station?: StationContext | null;
 }
 
 interface IntentContext {
@@ -204,6 +207,7 @@ export function buildRuleBasedAnswer({
   preferences,
   nowMs,
   formatTime = formatTime24,
+  station = null,
 }: FallbackInput): AssistantResponse {
   if (!snapshot) return NO_DATA_ANSWER;
 
@@ -236,7 +240,7 @@ export function buildRuleBasedAnswer({
 
   return fitToSchema({
     summary: answer.summary,
-    risk_context: riskContext(snapshot, concern),
+    risk_context: riskContext(snapshot, concern) + stationSentence(station, formatTime),
     top_actions: topActions.length
       ? topActions
       : [

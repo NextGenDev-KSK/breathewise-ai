@@ -11,6 +11,7 @@ import { DataQualityPanel } from "@/components/air/DataQualityPanel";
 import { IndiaAqiNotice } from "@/components/air/IndiaAqiNotice";
 import { HourlyChart } from "@/components/air/HourlyChart";
 import { RecommendationCard } from "@/components/recommendations/RecommendationCard";
+import { StationsCard } from "@/components/stations/StationsCard";
 import { Card, CardHeader } from "@/components/ui/Card";
 import type { AirQualitySnapshot } from "@/types/air";
 import { generateRecommendations } from "@/lib/engine/recommendations";
@@ -32,6 +33,7 @@ function Dashboard({ snapshot }: { snapshot: AirQualitySnapshot }) {
     <div className="space-y-6">
       <CurrentOverview snapshot={snapshot} />
       {isIndianLocation(snapshot) && snapshot.origin !== "demo" ? <IndiaAqiNotice /> : null}
+      <StationsCard snapshot={snapshot} />
 
       <section aria-labelledby="actions-heading">
         <div className="mb-3 flex flex-wrap items-end justify-between gap-2">

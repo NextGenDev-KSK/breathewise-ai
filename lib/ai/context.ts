@@ -1,6 +1,9 @@
 import type { AirQualitySnapshot } from "@/types/air";
 import type { Preferences } from "@/types/preferences";
-import type { AssistantContext } from "@/lib/ai/schema";
+import type { AssistantContext, StationContext } from "@/lib/ai/schema";
+import type { StationReport } from "@/lib/stations/schema";
+import { NAQI_RULES } from "@/lib/stations/naqi";
+import { epochToLocalTime } from "@/lib/time";
 import { currentConcern, dominantPollutant, isIndianLocation, upcomingHours } from "@/lib/engine/analysis";
 import { findOutdoorWindow } from "@/lib/engine/windows";
 import { generateRecommendations } from "@/lib/engine/recommendations";
@@ -9,13 +12,52 @@ import { POLLUTANTS } from "@/lib/air/pollutants";
 const r1 = (v: number | null) => (v === null ? null : Math.round(v * 10) / 10);
 
 /**
+ * The nearest station's measurements for the assistant: name, distance, local reading time, values and
+ * the CPCB-method National AQI. Null when there is no station detail.
+ */
+export function stationContextFrom(
+  report: StationReport | null,
+  { sample, utcOffsetSeconds }: { sample: boolean; utcOffsetSeconds: number },
+): StationContext | null {
+  const nearest = report?.nearest;
+  const [latest] = nearest?.readings ?? [];
+  if (!nearest || !latest) return null;
+  const { naqi } = nearest;
+  return {
+    name: nearest.station.name.slice(0, 120),
+    distanceKm: Math.min(nearest.station.distanceKm, 30),
+    measuredAt: epochToLocalTime(Date.parse(latest.measuredAt), utcOffsetSeconds),
+    sample,
+    readings: nearest.readings.map((r) => ({
+      pollutant: NAQI_RULES[r.pollutant].label,
+      value: r1(r.value) ?? 0,
+      unit: r.unit,
+    })),
+    nationalAqi: naqi?.ok
+      ? {
+          index: naqi.index,
+          aboveScale: naqi.aboveScale,
+          category: naqi.category,
+          prominentPollutant: naqi.prominent.label,
+          averages: naqi.subIndices.map((s) => ({
+            pollutant: s.label,
+            average: r1(s.concentration) ?? 0,
+            subIndex: s.index,
+          })),
+        }
+      : null,
+  };
+}
+
+/**
  * Builds the minimal, validated context sent to the assistant endpoint.
- * Coordinates are never included; only a place label and readings.
+ * Coordinates are never included; only place and station labels and readings.
  */
 export function buildAssistantContext(
   snapshot: AirQualitySnapshot,
   prefs: Preferences,
   nowMs: number,
+  station: StationContext | null = null,
 ): AssistantContext {
   const c = currentConcern(snapshot);
   const d = dominantPollutant(snapshot);
@@ -81,5 +123,6 @@ export function buildAssistantContext(
       .slice(0, 8)
       .map((r) => ({ title: r.title.slice(0, 200), reason: r.reason.slice(0, 500) })),
     isIndia: isIndianLocation(snapshot),
+    station,
   };
 }

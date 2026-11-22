@@ -15,6 +15,7 @@ import {
 import { useAirQuality, type AirState } from "@/hooks/useAirQuality";
 import { useClock } from "@/hooks/useClock";
 import { useHydrated } from "@/hooks/useHydrated";
+import { useStations, type StationsState } from "@/hooks/useStations";
 import { useStoredState } from "@/hooks/useStoredState";
 import { PlaceSchema } from "@/lib/air/snapshotSchema";
 import { STORAGE_KEYS } from "@/lib/storage";
@@ -33,6 +34,8 @@ interface AppContextValue {
   selectPlace: (place: Place) => void;
   recentPlaces: Place[];
   air: AirState;
+  /** Nearby monitoring stations (OpenAQ): measured readings that complement the model forecast. */
+  stations: StationsState;
   refresh: () => void;
   nowMs: number;
   formatTime: FormatTime;
@@ -72,6 +75,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     demoMode: settings.demoMode,
     nowMs: clockMs,
   });
+  const stations = useStations({ enabled: ready, place, demoMode: settings.demoMode });
   // Never let "now" fall behind the moment the data on screen was fetched.
   const nowMs = Math.max(clockMs, air.snapshot?.fetchedAt ?? 0);
 
@@ -110,6 +114,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       selectPlace,
       recentPlaces,
       air,
+      stations,
       refresh,
       nowMs,
       formatTime,
@@ -124,6 +129,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       selectPlace,
       recentPlaces,
       air,
+      stations,
       refresh,
       nowMs,
       formatTime,

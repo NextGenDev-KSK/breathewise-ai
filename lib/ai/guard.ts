@@ -36,6 +36,14 @@ function knownValues(ctx: AssistantContext): number[] {
     if (h.us_aqi !== null) values.push(h.us_aqi);
   }
   if (ctx.concern) values.push(ctx.concern.value);
+  if (ctx.station) {
+    for (const r of ctx.station.readings) values.push(r.value);
+    const naqi = ctx.station.nationalAqi;
+    if (naqi) {
+      values.push(naqi.index);
+      for (const a of naqi.averages) values.push(a.average, a.subIndex);
+    }
+  }
   return values;
 }
 

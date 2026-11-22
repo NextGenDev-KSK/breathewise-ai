@@ -1,12 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "@/components/app/AppProvider";
 import { askGemini, fetchAssistantStatus } from "@/lib/ai/client";
-import { buildAssistantContext } from "@/lib/ai/context";
+import { buildAssistantContext, stationContextFrom } from "@/lib/ai/context";
 import { buildRuleBasedAnswer } from "@/lib/ai/fallback";
 import { AI_DISABLED_NOTICE, assistantModeLabel, FALLBACK_NOTICES } from "@/lib/ai/notices";
-import { MAX_HISTORY, MAX_MESSAGE_LENGTH, type AssistantResponse } from "@/lib/ai/schema";
+import {
+  MAX_HISTORY,
+  MAX_MESSAGE_LENGTH,
+  type AssistantResponse,
+  type StationContext,
+} from "@/lib/ai/schema";
+import type { AirQualitySnapshot } from "@/types/air";
 
 export type AnswerSource = { kind: "gemini"; model: string } | { kind: "rules" };
 
@@ -45,6 +51,18 @@ function historyFrom(turns: readonly Turn[]) {
   ]);
 }
 
+/** The nearest station's measurements in the form the assistant receives, once both data sets loaded. */
+function useStationContext(snapshot: AirQualitySnapshot | null): StationContext | null {
+  const { stations } = useApp();
+  return useMemo(() => {
+    if (stations.status !== "success" || !snapshot) return null;
+    return stationContextFrom(stations.report, {
+      sample: stations.sample,
+      utcOffsetSeconds: snapshot.utcOffsetSeconds,
+    });
+  }, [stations, snapshot]);
+}
+
 /**
  * Conversation state for the assistant. Uses Gemini when it is configured, enabled and local data
  * is available; otherwise (or on any AI failure) answers with the rule engine and says why.
@@ -58,6 +76,7 @@ export function useAssistantChat() {
   const controllerRef = useRef<AbortController | null>(null);
   const nextId = useRef(1);
   const snapshot = air.snapshot;
+  const station = useStationContext(snapshot);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -83,7 +102,7 @@ export function useAssistantChat() {
       controllerRef.current = controller;
       const id = nextId.current++;
       const ruleAnswer = () =>
-        buildRuleBasedAnswer({ message: question, snapshot, preferences, nowMs, formatTime });
+        buildRuleBasedAnswer({ message: question, snapshot, preferences, nowMs, formatTime, station });
 
       if (!settings.aiEnabled || configured !== true || !snapshot) {
         const notice = ruleModeNotice(settings.aiEnabled, configured);
@@ -100,7 +119,7 @@ export function useAssistantChat() {
         const result = await askGemini({
           message: question,
           history: historyFrom(turns),
-          context: buildAssistantContext(snapshot, preferences, nowMs),
+          context: buildAssistantContext(snapshot, preferences, nowMs, station),
           signal: controller.signal,
         });
         updateTurn(
@@ -116,7 +135,7 @@ export function useAssistantChat() {
         if (controllerRef.current === controller) setPending(false);
       }
     },
-    [configured, formatTime, nowMs, preferences, settings.aiEnabled, snapshot, turns],
+    [configured, formatTime, nowMs, preferences, settings.aiEnabled, snapshot, station, turns],
   );
 
   return {

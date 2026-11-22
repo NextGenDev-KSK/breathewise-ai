@@ -20,8 +20,8 @@ test.describe("dashboard and location", () => {
     await page.getByRole("option", { name: "Delhi, Delhi, India" }).click();
     await expect(page.getByText("152", { exact: true })).toBeVisible();
     await expect(page.getByText("Unhealthy", { exact: true })).toBeVisible();
-    await expect(page.getByText("86.6 µg/m³")).toBeVisible();
-    await expect(page.getByText("This is not India's official National AQI")).toBeVisible();
+    await expect(page.getByText("86.6 µg/m³", { exact: true })).toBeVisible();
+    await expect(page.getByText("The values above are not India's official National AQI")).toBeVisible();
     await expect(page.getByText("Model estimate and forecast (not a station measurement)")).toBeVisible();
     await expect(page.getByRole("heading", { name: "What to do today" })).toBeVisible();
   });
@@ -32,7 +32,7 @@ test.describe("dashboard and location", () => {
     await page.getByRole("combobox", { name: "Search for a city" }).fill("Delhi");
     await expect(page.getByRole("option").first()).toBeVisible();
     await page.keyboard.press("Enter");
-    await expect(page.getByText("86.6 µg/m³")).toBeVisible();
+    await expect(page.getByText("86.6 µg/m³", { exact: true })).toBeVisible();
   });
 
   test("API failure shows an error state with a working retry", async ({ page }) => {
@@ -42,19 +42,48 @@ test.describe("dashboard and location", () => {
     await page.unroute("https://air-quality-api.open-meteo.com/**");
     await setup(page);
     await page.getByRole("button", { name: "Try again" }).click();
-    await expect(page.getByText("86.6 µg/m³")).toBeVisible();
+    await expect(page.getByText("86.6 µg/m³", { exact: true })).toBeVisible();
   });
 
   test("a saved copy is shown, clearly labelled, when the API fails after a success", async ({ page }) => {
     await setup(page);
     await page.goto("/");
-    await expect(page.getByText("86.6 µg/m³")).toBeVisible();
+    await expect(page.getByText("86.6 µg/m³", { exact: true })).toBeVisible();
     await page.unroute("https://air-quality-api.open-meteo.com/**");
     await page.route("https://air-quality-api.open-meteo.com/**", (r) =>
       r.fulfill({ status: 503, body: "{}" }),
     );
     await page.getByRole("button", { name: "Refresh air-quality data" }).click();
     await expect(page.getByText(/Showing a saved copy/)).toBeVisible();
+  });
+});
+
+test.describe("monitoring stations", () => {
+  test("the dashboard shows the nearest monitor's CPCB-method National AQI and readings", async ({
+    page,
+  }) => {
+    await setup(page);
+    await page.goto("/");
+    const card = page.locator("div.rounded-2xl", {
+      has: page.getByRole("heading", { name: "Nearest monitoring stations" }),
+    });
+    await expect(card.getByRole("heading", { name: "Lodhi Road, New Delhi - IMD" })).toBeVisible();
+    await expect(card.getByText("India National AQI (CPCB method)")).toBeVisible();
+    await expect(card.getByText("Moderately polluted")).toBeVisible();
+    await expect(card.getByText("Prominent pollutant:")).toContainText("PM10");
+    await expect(card.getByText("80.5 µg/m³")).toBeVisible();
+    await expect(card.getByRole("link", { name: /OpenAQ/ })).toBeVisible();
+  });
+
+  test("a station outage leaves the model data usable", async ({ page }) => {
+    await setup(page, { stationsStatus: 502 });
+    await page.goto("/");
+    await expect(
+      page.getByText(
+        "Monitoring-station data is temporarily unavailable. The model estimate above is still available.",
+      ),
+    ).toBeVisible();
+    await expect(page.getByText("Outdoor air concern:")).toBeVisible();
   });
 });
 
@@ -133,8 +162,10 @@ test.describe("assistant", () => {
 
   test("renders a validated Gemini response (mocked)", async ({ page }) => {
     await setup(page);
-    await page.route("**/api/assistant", (route) =>
-      route.request().method() === "GET"
+    const sent: string[] = [];
+    await page.route("**/api/assistant", (route) => {
+      if (route.request().method() === "POST") sent.push(route.request().postData() ?? "");
+      return route.request().method() === "GET"
         ? route.fulfill({ json: { configured: true } })
         : route.fulfill({
             json: {
@@ -158,8 +189,8 @@ test.describe("assistant", () => {
                 disclaimer: "Not medical advice.",
               },
             },
-          }),
-    );
+          });
+    });
     await page.goto("/assistant");
     await expect(page.getByText("Gemini AI, grounded in your local data")).toBeVisible();
     await page.getByRole("button", { name: "Is it a good time to go walking?" }).click();
@@ -167,6 +198,13 @@ test.describe("assistant", () => {
     await expect(
       page.getByText("Delay your walk: air is unhealthy now and lower tomorrow afternoon."),
     ).toBeVisible();
+    // Gemini is grounded in the nearest station's measurements too, and still never sees coordinates.
+    const context = JSON.parse(sent[0] ?? "{}").context;
+    expect(context.station).toMatchObject({
+      name: "Lodhi Road, New Delhi - IMD",
+      nationalAqi: { index: 141 },
+    });
+    expect(sent[0]).not.toMatch(/latitude|longitude|28\.65/);
   });
 
   test("falls back to rules when the AI response fails validation", async ({ page }) => {
